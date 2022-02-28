@@ -7,15 +7,36 @@
 
 (defvar *default-min-score* 20)
 
+(defvar *default-unlikely-candidate-regex*
+  "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
+
+(defvar *default-maybe-candidate-regex*
+  "and|article|body|column|content|main|shadow")
+
 (export-always 'is-readerable)
-(defgeneric is-readerable (document &key min-content-length min-score visibility-checker)
+(defgeneric is-readerable (document
+                           &key min-content-length min-score
+                             unlikely-candidate-regex maybe-candidate-regex
+                             visibility-checker)
   (:method :around (document
                     &key (min-content-length *default-min-content-length*)
-                    min-score visibility-checker)
+                      (min-score *default-min-score*)
+                      (unlikely-candidate-regex *default-unlikely-candidate-regex*)
+                      (maybe-candidate-regex *default-maybe-candidate-regex*)
+                      visibility-checker)
     (check-type min-content-length (or null integer) "an optional integer")
     (check-type min-score (or null integer) "an optional integer")
+    (check-type unlikely-candidate-regex string)
+    (check-type maybe-candidate-regex string)
     (check-type visibility-checker (or null function))
-    (the (values boolean &optional) (call-next-method)))
+    (the (values boolean &optional)
+         (call-next-method
+          document
+          :min-content-length min-content-length
+          :min-score min-score
+          :unlikely-candidate-regex unlikely-candidate-regex
+          :maybe-candidate-regex maybe-candidate-regex
+          :visibility-checker visibility-checker)))
   (:documentation
    "Decides whether or not the document is reader-able without parsing the whole thing.
 
@@ -42,12 +63,6 @@ Defaults to nil (no limit).")
 (defvar *default-char-threshold* 500
   "The default number of chars an article must have in order to return a result.")
 
-(defvar *default-unlikely-candidate-regex*
-  "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
-
-(defvar *default-maybe-candidate-regex*
-  "and|article|body|column|content|main|shadow")
-
 (export-always 'parse)
 (defgeneric parse (document
                    &key max-elements max-top-candidates
@@ -67,7 +82,14 @@ Defaults to nil (no limit).")
     (check-type char-threshold integer)
     (check-type unlikely-candidate-regex string)
     (check-type maybe-candidate-regex string)
-    (call-next-method))
+    (call-next-method
+     document
+     :max-elements max-elements
+     :max-top-candidates max-top-candidates
+     :tags-to-score tags-to-score
+     :char-threshold char-threshold
+     :unlikely-candidate-regex unlikely-candidate-regex
+     :maybe-candidate-regex maybe-candidate-regex))
   (:documentation "Parse DOCUMENT and return its readability-enabled version.
 
 Arguments are:
