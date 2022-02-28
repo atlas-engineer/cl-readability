@@ -11,10 +11,9 @@
        (or (not (plump:has-attribute node "aria-hidden"))
            (not (string-equal (plump:get-attribute node "aria-hidden") "true")))))
 
-(defmethod is-readerable ((document plump:root)
-                          &key min-content-length min-score
-                            unlikely-candidate-regex maybe-candidate-regex
-                            (visibility-checker #'node-visible-p))
+(defmethod is-readerable ((document plump:root) &key min-content-length min-score
+                                                  unlikely-candidate-regex maybe-candidate-regex
+                                                  (visibility-checker #'node-visible-p))
   (let* ((nodes (clss:select "p, pre, article, div > br" document)))
     (loop with max-score = 0
           for node across nodes
