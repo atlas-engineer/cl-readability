@@ -11,3 +11,7 @@
   :depends-on (cl-ppcre serapeum alexandria)
   :components ((:file "package")
                (:file "readability")))
+
+(defsystem readability/plump
+  :depends-on (readability plump clss)
+  :components ((:file "readability-plump")))
