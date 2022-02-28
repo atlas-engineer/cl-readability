@@ -24,10 +24,8 @@
                    (visible-p (if visibility-checker
                                   (funcall visibility-checker node)
                                   t))
-                   (likely-candidate (or (not (cl-ppcre:scan
-                                               unlikely-candidate-regex match-string))
-                                         (cl-ppcre:scan
-                                          maybe-candidate-regex match-string)))
+                   (likely-candidate (or (not (cl-ppcre:scan unlikely-candidate-regex match-string))
+                                         (cl-ppcre:scan maybe-candidate-regex match-string)))
                    (not-a-li (not (clss:node-matches-p "li p" node)))
                    (text-content (string-trim serapeum:whitespace (plump:text node)))
                    (text-content-length (length text-content))
