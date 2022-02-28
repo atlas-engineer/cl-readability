@@ -124,6 +124,13 @@ Arguments are:
     (check-type char-threshold integer)
     (check-type unlikely-candidate-regex string)
     (check-type maybe-candidate-regex string)
-    (call-next-method))
+    (call-next-method
+     document
+     :max-elements max-elements
+     :max-top-candidates max-top-candidates
+     :tags-to-score tags-to-score
+     :char-threshold char-threshold
+     :unlikely-candidate-regex unlikely-candidate-regex
+     :maybe-candidate-regex maybe-candidate-regex))
   (:documentation "A destructive version of `parse'.
 See `parse' for the argument description."))
