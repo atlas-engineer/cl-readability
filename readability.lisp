@@ -1,7 +1,7 @@
 ;;;; SPDX-FileCopyrightText: Atlas Engineer LLC
 ;;;; SPDX-License-Identifier: BSD-3-Clause
 
-(in-package #:cl-readability)
+(in-package #:readability)
 
 (defvar *default-min-content-length* 140)
 
