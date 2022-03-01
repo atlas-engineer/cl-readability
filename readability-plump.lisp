@@ -87,3 +87,26 @@
                do (plump:replace-child
                    node (serapeum:lret ((child (elt (plump:children node) 0)))
                           (setf (plump:attributes child) (plump:attributes node))))))
+
+;;; XXX: Readability._getArticleTitle()
+(defmethod get-article-title ((element plump:element))
+  (let* ((original-title (elt (clss:select "title" element) 0))
+         (title-parts (cl-ppcre:split " [\\|\\-\\\\\\/>»:] " original-title)))
+    ;; TODO: Parse colon-delimited titles properly. Requires some refactoring.
+    (cond
+      ((> 5 (length (serapeum:tokens (alexandria:lastcar title-parts))) 3)
+       (alexandria:lastcar title-parts))
+      ((> 5 (length (serapeum:tokens (first title-parts))) 3)
+       (first title-parts))
+      ((serapeum:single (clss:select "h1" element))
+       (plump:text (elt (clss:select "h1" element) 0)))
+      (t original-title))))
+
+;; TODO: Replace with the cleaning loops and BR cleaning call?
+(defmethod prepare-document ((element plump:element))
+  (loop for style across (clss:select "style" element)
+        do (plump:remove-child style))
+  ;; Remove BRs
+  (loop for font across (clss:select "font" element)
+        do (replace-with-tag elem "span")))
+
