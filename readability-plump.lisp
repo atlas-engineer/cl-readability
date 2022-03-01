@@ -37,6 +37,16 @@
             do (return t)
           finally (return nil))))
 
+;; XXX: Readability._setTagName()
+(defmethod replace-with-tag ((node plump:node) tag-name)
+  (plump:replace-child
+   node (apply #'make-instance
+               (type-of node)
+               :tag-name tag-name
+               :parent nil
+               (when (plump:nesting-node-p node)
+                 (list :children (plump:children node))))))
+
 ;; XXX: A free rewrite of Readability._cleanClasses()
 (defmethod normalize-classes ((node plump:node))
   ;; TODO: Classes to preserve.
@@ -63,9 +73,7 @@
             ;; can be converted to a text node
             ;;
             ;; Replace the link with a span to preserve children.
-            do (plump:replace-child
-                elem (make-instance
-                      'plump:element :tag-name "span" :parent nil :children (plump:children elem)))
+            do (replace-with-tag elem "span")
           else do (plump:set-attribute elem "href" (relative->absolute href)))))
 
 ;;; XXX: Readability._simplifyNestedElements
