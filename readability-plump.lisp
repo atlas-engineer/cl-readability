@@ -108,5 +108,5 @@
         do (plump:remove-child style))
   ;; Remove BRs
   (loop for font across (clss:select "font" element)
-        do (replace-with-tag elem "span")))
+        do (replace-with-tag font "span")))
 
