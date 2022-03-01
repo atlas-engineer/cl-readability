@@ -76,6 +76,65 @@
             do (replace-with-tag elem "span")
           else do (plump:set-attribute elem "href" (relative->absolute href)))))
 
+;;; XXX: Readability._getNextNode()
+(defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
+  (declare (ignore ignore-self-and-kids))
+  (plump:next-element node))
+
+;;; XXX: Readability._getNextNode()
+(defmethod get-next-node ((element plump:element) &optional ignore-self-and-kids)
+  (if ignore-self-and-kids
+      (loop for node = (plump:parent element) then (plump:parent node)
+            until (and node (not (plump:next-element node)))
+            finally (return (and node (plump:next-element node))))
+      (loop for child across (plump:children element)
+            when (plump:element-p child)
+              do (return child))))
+
+;;; XXX: Readability._checkByline()
+(defmethod get-byline ((element plump:element) match-string)
+  (let ((rel (plump:get-attribute element "rel"))
+        (itemprop (plump:get-attribute element "itemprop")))
+    (if (or (equal rel "author")
+            (and itemprop (search "author" itemprop))
+            (and (cl-ppcre:scan "byline|author|dateline|writtenby|p-author" match-string)
+                 (> 100 (length (string-trim serapeum:whitespace (plump:text element))) 0)))
+        (string-trim serapeum:whitespace (plump:text element)))))
+
+;;; XXX: Readability._cleanStyles()
+(defmethod clean-styles ((element plump:element))
+  ;; Readability.REGEXPS.PRESENTATIONAL_ATTRIBUTES
+  (dolist (attr (list "align" "background" "bgcolor" "border" "cellpadding" "cellspacing" "frame"
+                      "hspace" "rules" "style" "valign" "vspace" "width" "height"))
+    (plump:remove-attribute element attr))
+  (loop for child across (plump:child-elements element)
+        do (clean-styles child)))
+
+;;; XXX: Readability._getClassWeight()
+(defmethod getClassWeight ((element plump:element))
+  ;; Readability.REGEXPS.positive
+  (let ((positive "article|body|content|entry|hentry|h-entry|main|page|pagination|post|text|blog|story")
+        ;; Readability.REGEXPS.positive
+        (negative "-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|tool|widget"))
+    (flet ((bool-mul (boolean &optional (multiplier 1))
+             (if boolean multiplier 0)))
+      (+ (bool-mul
+          (unless (uiop:emptyp (plump:get-attribute element "class"))
+            (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "class")) 25)
+               (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "class")) -25))))
+         (bool-mul
+          (unless (uiop:emptyp (plump:get-attribute element "id"))
+            (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
+               (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
+
+;;; XXX: Readability._isElementWithoutContent()
+(defmethod without-content-p ((element plump:element))
+  (and (zerop (length (string-trim serapeum:whitespace (plump:text element))))
+       (or (zerop (length (plump:children element)))
+           (= (length (plump:children element))
+              (+ (length (clss:select "br" element))
+                 (length (clss:select "hr" element)))))))
+
 ;;; XXX: Readability._simplifyNestedElements
 (defmethod simplify-nested-elements ((element plump:element))
   (loop for node = element then (get-next-node node)
