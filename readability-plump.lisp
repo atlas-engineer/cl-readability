@@ -159,7 +159,7 @@
       (t original-title))))
 
 ;; TODO: Replace with the cleaning loops and BR cleaning call?
-(defmethod prepare-document ((element plump:element))
+(defmethod prepare-document ((element plump:nesting-node))
   (loop for style across (clss:select "style" element)
         do (plump:remove-child style))
   ;; Remove BRs
