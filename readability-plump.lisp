@@ -166,3 +166,34 @@
   (loop for font across (clss:select "font" element)
         do (replace-with-tag font "span")))
 
+(defmethod nparse ((document plump:nesting-node))
+  (alexandria:when-let* ((max *max-elements*)
+                         (len (length (clss:select "*" document)))
+                         (long (> len max)))
+    (signal 'too-many-elements-error :number-of-elements len))
+  ;; TODO: this._unwrapNoscriptImages(this._doc);
+  ;; TODO: var jsonLd = this._disableJSONLD ? {} : this._getJSONLD(this._doc);
+  ;; XXX: this._removeScripts(this._doc);
+  (loop for node across (clss:select "script,noscript" document)
+        when (equalp "script" (plump:tag-name node))
+          do (plump:remove-attribute node "src")
+             ;; FIXME: Can <script> have >1 children? What for?
+          and do (plump:remove-child (elt (plump:children node) 0))
+        else do (plump:remove-child node))
+  (prepare-document document)
+  ;; TODO: var metadata = this._getArticleMetadata(jsonLd);
+  ;; TODO: this._articleTitle = metadata.title;
+  ;; TODO: var articleContent = this._grabArticle();
+  ;; TODO: this._postProcessContent(articleContent);
+  ;; TODO: Find excerpt.
+  ;; TODO: Return:
+  ;; - title
+  ;; - byline
+  ;; - dir (?)
+  ;; - lang
+  ;; - HTML content
+  ;; - text content
+  ;; - length of text
+  ;; - excerpt
+  ;; - site name
+  )
