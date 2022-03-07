@@ -1,136 +1,73 @@
-;;;; SPDX-FileCopyrightText: Atlas Engineer LLC
+;;;; SPDX-FileCopyrightText: Atlas Engineer LCC
 ;;;; SPDX-License-Identifier: BSD-3-Clause
 
 (in-package #:readability)
 
-(defvar *default-min-content-length* 140)
+(defvar *min-content-length* 140
+  "The minimum node content length used to decide if the document is readerable.")
 
-(defvar *default-min-score* 20)
+(defvar *min-score* 20
+  "The minumum cumulated 'score' used to determine if the document is readerable.")
 
-(defvar *default-unlikely-candidate-regex*
+(defvar *unlikely-candidate-regex*
   "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
 
-(defvar *default-maybe-candidate-regex*
+(defvar *maybe-candidate-regex*
   "and|article|body|column|content|main|shadow")
 
+(defvar *visibility-checker* nil
+  "The function used to determine if a node is visible.")
+
 (export-always 'is-readerable)
-(defgeneric is-readerable (document
-                           &key min-content-length min-score
-                             unlikely-candidate-regex maybe-candidate-regex
-                             visibility-checker)
-  (:method :around (document
-                    &key (min-content-length *default-min-content-length*)
-                      (min-score *default-min-score*)
-                      (unlikely-candidate-regex *default-unlikely-candidate-regex*)
-                      (maybe-candidate-regex *default-maybe-candidate-regex*)
-                      visibility-checker)
-    (check-type min-content-length (or null integer) "an optional integer")
-    (check-type min-score (or null integer) "an optional integer")
-    (check-type unlikely-candidate-regex string)
-    (check-type maybe-candidate-regex string)
-    (check-type visibility-checker (or null function))
-    (the (values boolean &optional)
-         (call-next-method
-          document
-          :min-content-length min-content-length
-          :min-score min-score
-          :unlikely-candidate-regex unlikely-candidate-regex
-          :maybe-candidate-regex maybe-candidate-regex
-          :visibility-checker visibility-checker)))
+(defgeneric is-readerable (document)
   (:documentation
    "Decides whether or not the document is reader-able without parsing the whole thing.
 
-Arguments:
-- MIN-CONTENT-LENGTH -- The minimum node content length used to decide
-  if the document is readerable. Defaults to `*default-min-content-length*'.
-- MIN-SCORE -- The minumum cumulated 'score' used to determine if the
-  document is readerable. Defaults to `*default-min-score*'.
-- VISIBILITY-CHECKER -- The function used to determine if a node is
-  visible."))
+Variables that influence the checking:
+- `*min-content-length*',
+- `*min-score*',
+- `*unlikely-candidate-regex*',
+- `*maybe-candidate-regex*',
+- `*visibility-checker*'."))
 
-(defvar *default-max-elements* nil
+(defvar *max-elements* nil
   "Max number of nodes supported by the parser.
 Defaults to nil (no limit).")
 
-(defvar *default-max-top-candidates* 5
+(defvar *max-top-candidates* 5
   "The number of top candidates to consider when analysing how tight
   the competition is among candidates.")
 
-(defvar *default-tags-to-score*
+(defvar *tags-to-score*
   '("SECTION" "H2" "H3" "H4" "H5" "H6" "P" "TD" "PRE")
   "Element tags to score by default.")
 
-(defvar *default-char-threshold* 500
+(defvar *char-threshold* 500
   "The default number of chars an article must have in order to return a result.")
 
+(define-condition too-many-elements-error (error)
+  ((possible-maximum
+    :initform *max-elements*
+    :accessor possible-maximum
+    :initarg :possible-maximum)
+   (number-of-elements
+    :initform nil
+    :accessor number-of-elements
+    :initarg :number-of-elements))
+  (:report
+   (lambda (condition stream)
+     (format stream
+             "Too many elements in the document: found ~d, expected no more than ~d"
+             (number-of-elements condition) (possible-maximum condition))))
+  (:documentation "A condition to signal when the number of elements to parse is too large.
+See `*max-elements*'."))
+
 (export-always 'parse)
-(defgeneric parse (document
-                   &key max-elements max-top-candidates
-                     tags-to-score char-threshold
-                     unlikely-candidate-regex
-                     maybe-candidate-regex)
-  (:method :around (document
-                    &key (max-elements *default-max-elements*)
-                      (max-top-candidates *default-max-top-candidates*)
-                      (tags-to-score *default-tags-to-score*)
-                      (char-threshold *default-char-threshold*)
-                      (unlikely-candidate-regex *default-unlikely-candidate-regex*)
-                      (maybe-candidate-regex *default-maybe-candidate-regex*))
-    (check-type max-elements (or null integer) "an optional integer")
-    (check-type max-top-candidates integer)
-    (check-type tags-to-score list "a list of strings")
-    (check-type char-threshold integer)
-    (check-type unlikely-candidate-regex string)
-    (check-type maybe-candidate-regex string)
-    (call-next-method
-     document
-     :max-elements max-elements
-     :max-top-candidates max-top-candidates
-     :tags-to-score tags-to-score
-     :char-threshold char-threshold
-     :unlikely-candidate-regex unlikely-candidate-regex
-     :maybe-candidate-regex maybe-candidate-regex))
+(defgeneric parse (document)
   (:documentation "Parse DOCUMENT and return its readability-enabled version.
-
-Arguments are:
-
-- MAX-ELEMENTS -- maximum number of elements to even try parsing. If
-  the page has more elements, give up on making it readable. An optional integer.
-- MAX-TOP-CANDIDATES -- The number of top candidates to consider when
-  analysing how tight the competition is among candidates. An integer.
-- TAGS-TO-SCORE -- Element tags to score by default. A list of uppercase strings.
-- CHAR-THRESHOLD -- The default number of chars an article must have
-  in order to return a result. An integer.
-- UNLIKELY-CANDIDATE-REGEX -- A regex string for what is not likely to
-  be article content.
-- MAYBE-CANDIDATE-REGEX -- a regex string for possible article content tags."))
+Non-destructive."))
 
 (export-always 'nparse)
-(defgeneric nparse (document
-                    &key max-elements max-top-candidates
-                      tags-to-score char-threshold
-                      unlikely-candidate-regex
-                      maybe-candidate-regex)
-  (:method :around (document
-                    &key (max-elements *default-max-elements*)
-                      (max-top-candidates *default-max-top-candidates*)
-                      (tags-to-score *default-tags-to-score*)
-                      (char-threshold *default-char-threshold*)
-                      (unlikely-candidate-regex *default-unlikely-candidate-regex*)
-                      (maybe-candidate-regex *default-maybe-candidate-regex*))
-    (check-type max-elements (or null integer) "an optional integer")
-    (check-type max-top-candidates integer)
-    (check-type tags-to-score list "a list of strings")
-    (check-type char-threshold integer)
-    (check-type unlikely-candidate-regex string)
-    (check-type maybe-candidate-regex string)
-    (call-next-method
-     document
-     :max-elements max-elements
-     :max-top-candidates max-top-candidates
-     :tags-to-score tags-to-score
-     :char-threshold char-threshold
-     :unlikely-candidate-regex unlikely-candidate-regex
-     :maybe-candidate-regex maybe-candidate-regex))
-  (:documentation "A destructive version of `parse'.
-See `parse' for the argument description."))
+(defgeneric nparse (document)
+  (:documentation "Parse DOCUMENT and return its readability-enabled version.
+Possibly modifies the original structure."))

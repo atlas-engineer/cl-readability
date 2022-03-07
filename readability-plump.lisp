@@ -11,29 +11,26 @@
        (or (not (plump:has-attribute node "aria-hidden"))
            (not (string-equal (plump:get-attribute node "aria-hidden") "true")))))
 
-(defmethod is-readerable ((document plump:root) &key min-content-length min-score
-                                                  unlikely-candidate-regex maybe-candidate-regex
-                                                  (visibility-checker #'node-visible-p))
-  (let* ((nodes (clss:select "p, pre, article, div > br" document)))
+(defmethod is-readerable ((document plump:root))
+  (let* ((*visibility-checker* #'node-visible-p)
+         (nodes (clss:select "p, pre, article, div > br" document)))
     (loop with max-score = 0
           for node across nodes
           for score
             = (serapeum:and-let*
                   ((match-string (uiop:strcat (plump:get-attribute node "class") " "
                                               (plump:get-attribute node "id")))
-                   (visible-p (if visibility-checker
-                                  (funcall visibility-checker node)
-                                  t))
-                   (likely-candidate (or (not (cl-ppcre:scan unlikely-candidate-regex match-string))
-                                         (cl-ppcre:scan maybe-candidate-regex match-string)))
+                   (visible-p (funcall *visibility-checker* node))
+                   (likely-candidate (or (not (cl-ppcre:scan *unlikely-candidate-regex* match-string))
+                                         (cl-ppcre:scan *maybe-candidate-regex* match-string)))
                    (not-a-li (not (clss:node-matches-p "li p" node)))
                    (text-content (string-trim serapeum:whitespace (plump:text node)))
                    (text-content-length (length text-content))
-                   (length-sufficient (>= text-content-length min-content-length)))
-                (sqrt (- text-content-length min-content-length)))
+                   (length-sufficient (>= text-content-length *min-content-length*)))
+                (sqrt (- text-content-length *min-content-length*)))
           when score
             do (incf max-score score)
-          when (> max-score min-score)
+          when (> max-score *min-score*)
             do (return t)
           finally (return nil))))
 
