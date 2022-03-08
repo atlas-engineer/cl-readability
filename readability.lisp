@@ -12,6 +12,10 @@
 (defvar *unlikely-candidate-regex*
   "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
 
+;;; XXX: Readability.UNLIKELY_ROLES
+(defvar *unlikely-roles*
+  (list "menu" "menubar" "complementary" "navigation" "alert" "alertdialog" "dialog"))
+
 (defvar *maybe-candidate-regex*
   "and|article|body|column|content|main|shadow")
 
