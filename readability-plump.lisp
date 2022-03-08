@@ -53,11 +53,12 @@
           do (normalize-classes child))))
 
 ;;; XXX: Readability._fixRelativeUris
-(defmethod fix-relative-urls ((node plump:element) absolute-uri)
+(defmethod fix-relative-urls ((node plump:nesting-node) absolute-uri)
   (flet ((relative->absolute (uri)
-           (quri:merge-uris (quri:uri uri) (quri:uri absolute-uri))))
+           (when (and uri (not (uiop:emptyp (ignore-errors (quri:render-uri (quri:uri uri))))))
+             (quri:render-uri (quri:merge-uris (quri:uri uri) (quri:uri absolute-uri))))))
     (loop for elem across (clss:select "a, img, picture, figure, video, audio, source" node)
-          for href = (plump:get-attribute elem "href")
+          for href =  (plump:get-attribute elem "href")
           for src = (plump:get-attribute elem "src")
           for poster = (plump:get-attribute elem "poster")
           ;; TODO: srcset
@@ -65,13 +66,14 @@
             do (plump:set-attribute elem "src" (relative->absolute src))
           unless (uiop:emptyp poster)
             do (plump:set-attribute elem "poster" (relative->absolute poster))
-          when (and href (uiop:string-prefix-p "JavaScript:" href))
+          when (and href (string= "javascript:" (quri:uri-scheme (quri:uri href))))
             ;; TODO: if the link only contains simple text content, it
             ;; can be converted to a text node
             ;;
             ;; Replace the link with a span to preserve children.
             do (replace-with-tag elem "span")
-          else do (plump:set-attribute elem "href" (relative->absolute href)))))
+          else unless (uiop:emptyp href)
+                 do (plump:set-attribute elem "href" (relative->absolute href)))))
 
 ;;; XXX: Readability._getNextNode()
 (defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
@@ -79,7 +81,7 @@
   (plump:next-element node))
 
 ;;; XXX: Readability._getNextNode()
-(defmethod get-next-node ((element plump:element) &optional ignore-self-and-kids)
+(defmethod get-next-node ((element plump:nesting-node) &optional ignore-self-and-kids)
   (if ignore-self-and-kids
       (loop for node = (plump:parent element) then (plump:parent node)
             until (and node (not (plump:next-element node)))
@@ -133,16 +135,19 @@
                  (length (clss:select "hr" element)))))))
 
 ;;; XXX: Readability._simplifyNestedElements
-(defmethod simplify-nested-elements ((element plump:element))
+(defmethod simplify-nested-elements ((element plump:nesting-node))
   (loop for node = element then (get-next-node node)
-        for parent = (plump:parent node)
+        for parent = (ignore-errors (plump:parent node))
+        while node
         when (and (clss:node-matches-p "div, section" node)
                   (without-content-p node))
           do (plump:remove-child node)
-        else when (serapeum:single (plump:children node))
+        else when (and (serapeum:single (plump:children node))
+                       (plump:element-p (elt (plump:children node) 0)))
                do (plump:replace-child
                    node (serapeum:lret ((child (elt (plump:children node) 0)))
-                          (setf (plump:attributes child) (plump:attributes node))))))
+                          (setf (slot-value child 'plump-dom::%attributes)
+                                (plump:attributes node))))))
 
 ;;; XXX: Readability._getArticleTitle()
 (defmethod get-article-title ((element plump:element))
