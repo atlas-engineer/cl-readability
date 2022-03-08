@@ -18,6 +18,12 @@
 (defvar *visibility-checker* nil
   "The function used to determine if a node is visible.")
 
+(defvar *preserved-classes* nil
+  "The of classes to preserve on HTML elements.
+If nil, preserve nothing.
+If t, preserve everything.
+If a list of strings, preserve this exact list of classes.")
+
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)
   (:documentation
