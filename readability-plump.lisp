@@ -34,6 +34,20 @@
             do (return t)
           finally (return nil))))
 
+;;; XXX Readability._unwrapNoscriptImages()
+(defmethod unwrap-noscript-images ((document plump:nesting-node))
+  (loop for image across (clss:select "img" document)
+        do (loop named attr-checking
+                 for attr being the hash-key of (plump:attributes image)
+                   using (hash-value attr-value)
+                 when (or (member attr '("src" "srcset" "data-src" "data-srcset")
+                                  :test #'string-equal)
+                          (cl-ppcre:scan "\\.(jpg|jpeg|png|webp)" attr-value))
+                   do (return-from attr-checking)
+                 finally (plump:remove-child image)))
+  ;; TODO: noscript cleaning.
+  )
+
 ;; XXX: Readability._setTagName()
 (defmethod replace-with-tag ((node plump:node) tag-name)
   (plump:replace-child
@@ -171,6 +185,64 @@
   (loop for font across (clss:select "font" element)
         do (replace-with-tag font "span")))
 
+(defmethod has-ancestor-tag ((node plump:child-node) (tag-name string)
+                             &key (max-depth 3) filter-fn)
+  (labels ((parent-until-tag (node depth)
+             (cond
+               ((and (plusp depth)
+                     (< depth max-depth)
+                     (plump:child-node-p node)
+                     (plump:parent node)
+                     (string-equal tag-name (plump:tag-name (plump:parent node)))
+                     (or (not filter-fn)
+                         (funcall filter-fn node)))
+                t)
+               ((and (plusp depth)
+                     (< depth max-depth)
+                     (plump:child-node-p node)
+                     (plump:parent node))
+                (parent-until-tag (plump:parent node) (1+ depth)))
+               (t nil))))
+    (parent-until-tag node 0)))
+
+(defmethod grab-article ((document plump:nesting-node))
+  (alexandria:when-let* ((body (clss:select "body" document))
+                         (body (elt (clss:select "body" document) 0)))
+    (loop for node across (clss:select "*" body)
+          for match-string = (uiop:strcat (plump:get-attribute node "class") " "
+                                          (plump:get-attribute node "id"))
+          when (and *visibility-checker*
+                    (not (funcall *visibility-checker* node)))
+            do (plump:remove-child node)
+          ;; TODO: this._checkByline(node, matchString)
+          when (and (ppcre:scan *unlikely-candidate-regex* match-string)
+                    (not (ppcre:scan *maybe-candidate-regex* match-string))
+                    (not (has-ancestor-tag node "table"))
+                    (not (has-ancestor-tag node "code"))
+                    (not (clss:node-matches-p "body,a" node)))
+            do (plump:remove-child node)
+          when (and (plump:get-attribute node "role")
+                    (member (plump:get-attribute node "role")
+                            *unlikely-roles* :test #'string-equal))
+            do (plump:remove-child node)
+          when (and (member (plump:tag-name node)
+                            (list "div" "section" "header" "h1" "h2" "h3" "h4" "h5" "h6")
+                            :test #'string-equal)
+                    (without-content-p node))
+            do (plump:remove-child node)
+               ;; TODO: L959-1319
+          )
+    body))
+
+(defmethod post-process-content ((element plump:nesting-node))
+  (fix-relative-urls
+   element
+   ;; FIXME!!!
+   "https://example.org")
+  (simplify-nested-elements element)
+  (normalize-classes element)
+  element)
+
 (defmethod nparse ((document plump:nesting-node))
   (alexandria:when-let* ((max *max-elements*)
                          (len (length (clss:select "*" document)))
@@ -186,19 +258,28 @@
           and do (plump:remove-child (elt (plump:children node) 0))
         else do (plump:remove-child node))
   (prepare-document document)
-  ;; TODO: var metadata = this._getArticleMetadata(jsonLd);
-  ;; TODO: this._articleTitle = metadata.title;
-  ;; TODO: var articleContent = this._grabArticle();
-  ;; TODO: this._postProcessContent(articleContent);
-  ;; TODO: Find excerpt.
-  ;; TODO: Return:
-  ;; - title
-  ;; - byline
-  ;; - dir (?)
-  ;; - lang
-  ;; - HTML content
-  ;; - text content
-  ;; - length of text
-  ;; - excerpt
-  ;; - site name
+  (let* ((doc document)
+         (lang (alexandria:when-let ((html (clss:select "html" doc)))
+                 (plump:get-attribute (elt html 0) "lang")))
+         ;; TODO: var metadata = this._getArticleMetadata(jsonLd);
+         (metadata nil)
+         ;; TODO: this._articleTitle = metadata.title;
+         (title nil)
+         ;; TODO: var articleContent = this._grabArticle();
+         (doc (grab-article doc))
+         ;; XXX: this._postProcessContent(articleContent);
+         (doc (post-process-content doc)))
+    ;; TODO: Find excerpt.
+    (values doc
+            (plump:serialize doc nil)
+            (plump:text doc)
+            (length (plump:text doc))
+            ;; TODO: Return:
+            ;; - title
+            ;; - byline
+            ;; - dir (?)
+            lang
+            ;; - excerpt
+            ;; - site name
+            ))
   )
