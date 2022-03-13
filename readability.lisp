@@ -28,6 +28,14 @@ If nil, preserve nothing.
 If t, preserve everything.
 If a list of strings, preserve this exact list of classes.")
 
+(defvar *phrasing-elements*
+  '("ABBR" "AUDIO" "B" "BDO" "BR" "BUTTON" "CITE" "CODE" "DATA"
+    "DATALIST" "DFN" "EM" "EMBED" "I" "IMG" "INPUT" "KBD" "LABEL"
+    "MARK" "MATH" "METER" "NOSCRIPT" "OBJECT" "OUTPUT" "PROGRESS" "Q"
+    "RUBY" "SAMP" "SCRIPT" "SELECT" "SMALL" "SPAN" "STRONG" "SUB"
+    "SUP" "TEXTAREA" "TIME" "VAR" "WBR")
+  "Types of tags that usually include sensible text.")
+
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)
   (:documentation
