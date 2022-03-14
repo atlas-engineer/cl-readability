@@ -293,16 +293,13 @@
             ))
     body))
 
-(defmethod post-process-content ((element plump:nesting-node))
-  (fix-relative-urls
-   element
-   ;; FIXME!!!
-   "https://example.org")
+(defmethod post-process-content ((element plump:nesting-node) url)
+  (fix-relative-urls element url)
   (simplify-nested-elements element)
   (normalize-classes element)
   element)
 
-(defmethod nparse ((document plump:nesting-node))
+(defmethod nparse ((document plump:nesting-node) url)
   (alexandria:when-let* ((max *max-elements*)
                          (len (length (clss:select "*" document)))
                          (long (> len max)))
@@ -327,7 +324,7 @@
          ;; TODO: var articleContent = this._grabArticle();
          (doc (grab-article doc))
          ;; XXX: this._postProcessContent(articleContent);
-         (doc (post-process-content doc)))
+         (doc (post-process-content doc url)))
     ;; TODO: Find excerpt.
     (values doc
             (plump:serialize doc nil)

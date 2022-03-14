@@ -81,11 +81,11 @@ Defaults to nil (no limit).")
 See `*max-elements*'."))
 
 (export-always 'parse)
-(defgeneric parse (document)
-  (:documentation "Parse DOCUMENT and return its readability-enabled version.
+(defgeneric parse (document url)
+  (:documentation "Parse DOCUMENT (from URL) and return its readability-enabled version.
 Non-destructive."))
 
 (export-always 'nparse)
-(defgeneric nparse (document)
-  (:documentation "Parse DOCUMENT and return its readability-enabled version.
+(defgeneric nparse (document url)
+  (:documentation "Parse DOCUMENT (from URL) and return its readability-enabled version.
 Possibly modifies the original structure."))
