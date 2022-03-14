@@ -213,6 +213,10 @@
 (defmethod phrasing-content-p ((node plump:text-node))
   t)
 
+(defmethod phrasing-content-p ((node plump:comment))
+  (plump:remove-child node)
+  nil)
+
 (defmethod whitespace-node-p ((node plump:text-node))
   (zerop (length (string-trim serapeum:whitespace (plump:text node)))))
 
