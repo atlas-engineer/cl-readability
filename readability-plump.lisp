@@ -124,7 +124,7 @@
         do (clean-styles child)))
 
 ;;; XXX: Readability._getClassWeight()
-(defmethod getClassWeight ((element plump:element))
+(defmethod get-class-weight ((element plump:element))
   ;; Readability.REGEXPS.positive
   (let ((positive "article|body|content|entry|hentry|h-entry|main|page|pagination|post|text|blog|story")
         ;; Readability.REGEXPS.positive
