@@ -249,6 +249,10 @@
 (defmethod has-block-children-p ((node plump:node))
   nil)
 
+(defmethod get-inner-text ((node plump:node))
+  ;; TODO: normalize spaces
+  (string-trim serapeum:whitespace (plump:text node)))
+
 (defmethod grab-article ((document plump:nesting-node))
   (alexandria:when-let* ((body (clss:select "body" document))
                          (body (elt (clss:select "body" document) 0)))
