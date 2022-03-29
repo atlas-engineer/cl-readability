@@ -255,7 +255,7 @@
 
 (defmethod grab-article ((document plump:nesting-node))
   (alexandria:when-let* ((body (clss:select "body" document))
-                         (body (elt (clss:select "body" document) 0)))
+                         (body (elt body 0)))
     (loop for node across (clss:select "*" body)
           for match-string = (uiop:strcat (plump:get-attribute node "class") " "
                                           (plump:get-attribute node "id"))
