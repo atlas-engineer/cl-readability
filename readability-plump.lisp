@@ -255,6 +255,60 @@
   ;; TODO: normalize spaces
   (string-trim serapeum:whitespace (plump:text node)))
 
+;; XXX: Readability._getLinkDensity()
+(defmethod link-density ((element plump:element))
+  (/ (reduce (lambda (link-length link)
+               (+ link-length
+                  (let* ((href (plump:get-attribute link "href"))
+                         (hash-p (when href (eql #\# (elt href 0)))))
+                    (* (length (get-inner-text link)) (if hash-p 0.3 1)))))
+             (clss:select "a" element) :initial-value 0)
+     (length (get-inner-text element))))
+
+(defvar *score-table* (make-hash-table)
+  "The table for the already computed nodes score to cache the existing results.")
+
+(defmethod calculate-score ((element plump:element))
+  (alexandria:ensure-gethash
+   element *score-table*
+   (let* ((name (plump:tag-name element))
+          (initial-score
+            (1+ (cond
+                  ((equalp "div" name) 5)
+                  ((smember name '("td" "pre" "blockquote")) 3)
+                  ((smember name '("address" "ol" "ul" "dl" "dd" "dt" "li" "form"))
+                   -3)
+                  ((smember name '("h1" "h2" "h3" "h4" "h5" "h6" "th")) -5)
+                  (t 0))))
+          (inner-text (get-inner-text element))
+          (comma-score (1+ (count #\, inner-text)))
+          (length-score (min (round (/ (length inner-text) 100)) 3))
+          (class-score (get-class-weight element))
+          (link-density (link-density element))
+          (progeny-score (labels ((calc (node &optional (level 0))
+                                    (+ (/ (if (scoreable-p node)
+                                              (calculate-score node)
+                                              0)
+                                          (case level
+                                            (0 1)
+                                            (1 2)
+                                            (otherwise (* level 3))))
+                                       (reduce #'+ (map 'list (alexandria:rcurry #'calc (1+ level))
+                                                        (plump:children node))))))
+                           (reduce #'+ (map 'list #'calc (plump:children element))))))
+     (* (- 1 link-density)
+        (+ initial-score comma-score length-score class-score progeny-score)))))
+
+(defmethod scoreable-p ((node plump:element))
+  (and (smember (plump:tag-name node) *tags-to-score*)
+       (has-block-children-p node)
+       (plump:parent node)
+       (plump:element-p (plump:parent node))
+       (> (length (get-inner-text node)) 25)))
+
+(defmethod scoreable-p ((node plump:node))
+  nil)
+
 (defmethod grab-article ((document plump:nesting-node))
   (alexandria:when-let* ((body (clss:select "body" document))
                          (body (elt body 0)))
@@ -299,6 +353,9 @@
           when (single-tag-inside-p node "p")
             do (plump:replace-child node (elt (clss:select "p" node) 0))
                ;; TODO: L1005-1319
+          when (scoreable-p node)
+            maximize (calculate-score node) into max-score
+          ;; TODO: 1057-1319
           )
     body))
 
