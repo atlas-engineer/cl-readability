@@ -3,6 +3,10 @@
 
 (in-package #:readability)
 
+(defun smember (string list-of-string)
+  "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
+  (member string list-of-string :test #'string-equal))
+
 (defmethod node-visible-p ((node plump:element))
   ;; TODO: (!node.style || node.style.display != "none")
   (and (not (plump:has-attribute node "hidden"))
@@ -44,8 +48,7 @@
         do (loop named attr-checking
                  for attr being the hash-key of (plump:attributes image)
                    using (hash-value attr-value)
-                 when (or (member attr '("src" "srcset" "data-src" "data-srcset")
-                                  :test #'string-equal)
+                 when (or (smember attr '("src" "srcset" "data-src" "data-srcset"))
                           (cl-ppcre:scan "\\.(jpg|jpeg|png|webp)" attr-value))
                    do (return-from attr-checking)
                  finally (plump:remove-child image)))
@@ -207,8 +210,8 @@
         (recursive-parents node :max-depth max-depth)))
 
 (defmethod phrasing-content-p ((node plump:element))
-  (or (member (plump:tag-name node) *phrasing-elements* :test #'string-equal)
-      (and (member (plump:tag-name node) '("a" "del" "ins") :test #'string-equal)
+  (or (smember (plump:tag-name node) *phrasing-elements*)
+      (and (smember (plump:tag-name node) '("a" "del" "ins"))
            (every #'phrasing-content-p (plump:children node)))))
 
 (defmethod phrasing-content-p ((node plump:text-node))
@@ -240,9 +243,8 @@
 (defmethod has-block-children-p ((node plump:element))
   (some (lambda (child)
           (or (not (plump:nesting-node-p child))
-              (member (plump:tag-name child)
-                         '("BLOCKQUOTE" "DL" "DIV" "IMG" "OL" "P" "PRE" "TABLE" "UL")
-                         :test #'string-equal)
+              (smember (plump:tag-name child)
+                       '("BLOCKQUOTE" "DL" "DIV" "IMG" "OL" "P" "PRE" "TABLE" "UL"))
               (has-block-children-p child)))
         (plump:children node)))
 
@@ -270,14 +272,12 @@
                     (not (clss:node-matches-p "body,a" node)))
             do (remove-child* node)
           when (and (plump:get-attribute node "role")
-                    (member (plump:get-attribute node "role")
-                            *unlikely-roles* :test #'string-equal))
+                    (smember (plump:get-attribute node "role") *unlikely-roles* ))
             do (remove-child* node)
           when (plump:comment-p node)
             do (remove-child* node)
-          when (and (member (plump:tag-name node)
-                            (list "div" "section" "header" "h1" "h2" "h3" "h4" "h5" "h6")
-                            :test #'string-equal)
+          when (and (smember (plump:tag-name node)
+                             (list "div" "section" "header" "h1" "h2" "h3" "h4" "h5" "h6"))
                     (without-content-p node))
             do (remove-child* node)
           when (and (plump:element-p node)
