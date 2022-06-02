@@ -359,10 +359,28 @@
           )
     body))
 
+(defmethod remove-non-elements ((node plump:node))
+  ;; We can't remove those in `grab-article', because CLSS doesn't
+  ;; grab non-element nodes :/
+  ;;
+  ;; FIXME: We need to remove those because Plump somewhy considers
+  ;; comment and CDATA nodes as textual in `plump:text'.
+  (cond
+    ((or (plump:cdata-p node)
+         (plump:comment-p node)
+         (plump:xml-header-p node)
+         (and (plump:text-node-p node)
+              (uiop:emptyp (get-inner-text node))))
+     (remove-child* node))
+    ((plump:nesting-node-p node)
+     (loop for child across (plump:children node)
+           do (remove-non-elements child)))))
+
 (defmethod post-process-content ((element plump:nesting-node) url)
   (fix-relative-urls element url)
   (simplify-nested-elements element)
   (normalize-classes element)
+  (remove-non-elements element)
   element)
 
 (defmethod nparse ((document plump:nesting-node) url)
