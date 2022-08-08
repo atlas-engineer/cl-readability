@@ -36,18 +36,6 @@ If a list of strings, preserve this exact list of classes.")
     "SUP" "TEXTAREA" "TIME" "VAR" "WBR")
   "Types of tags that usually include sensible text.")
 
-(export-always 'is-readerable)
-(defgeneric is-readerable (document)
-  (:documentation
-   "Decides whether or not the document is reader-able without parsing the whole thing.
-
-Variables that influence the checking:
-- `*min-content-length*',
-- `*min-score*',
-- `*unlikely-candidate-regex*',
-- `*maybe-candidate-regex*',
-- `*visibility-checker*'."))
-
 (defvar *max-elements* nil
   "Max number of nodes supported by the parser.
 Defaults to nil (no limit).")
@@ -79,6 +67,18 @@ Defaults to nil (no limit).")
              (number-of-elements condition) (possible-maximum condition))))
   (:documentation "A condition to signal when the number of elements to parse is too large.
 See `*max-elements*'."))
+
+(export-always 'is-readerable)
+(defgeneric is-readerable (document)
+  (:documentation
+   "Decides whether or not the document is reader-able without parsing the whole thing.
+
+Variables that influence the checking:
+- `*min-content-length*',
+- `*min-score*',
+- `*unlikely-candidate-regex*',
+- `*maybe-candidate-regex*',
+- `*visibility-checker*'."))
 
 (export-always 'parse)
 (defgeneric parse (document url)
