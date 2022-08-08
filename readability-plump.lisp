@@ -3,6 +3,21 @@
 
 (in-package #:readability)
 
+(defmethod qs ((root plump:nesting-node) selector)
+  (elt (clss:select selector root) 0))
+(defmethod qsa ((root plump:nesting-node) selector)
+  (coerce (clss:select selector root) 'list))
+(defmethod attr ((element plump:element) attribute)
+  (plump:get-attribute element attribute))
+(defmethod (setf attr) (value (element plump:element) attribute)
+  (plump:set-attribute element attribute value))
+(defmethod matches ((element plump:element) selector)
+  (clss:node-matches-p selector element))
+(defmethod inner-text ((node plump:node))
+  ;; FIXME: This often returns meaningless text for <style> and
+  ;; <script> elements. Maybe re-write the logic somehow?
+  (plump:text node))
+
 (defun smember (string list-of-string)
   "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
   (member string list-of-string :test #'string-equal))
@@ -19,28 +34,10 @@
   (when (plump:parent node)
     (plump:remove-child node)))
 
-(defmethod is-readerable ((document plump:root))
-  (let* ((*visibility-checker* #'node-visible-p)
-         (nodes (clss:select "p, pre, article, div > br" document)))
-    (loop with max-score = 0
-          for node across nodes
-          for score
-            = (serapeum:and-let*
-                  ((match-string (uiop:strcat (plump:get-attribute node "class") " "
-                                              (plump:get-attribute node "id")))
-                   (visible-p (funcall *visibility-checker* node))
-                   (likely-candidate (or (not (cl-ppcre:scan *unlikely-candidate-regex* match-string))
-                                         (cl-ppcre:scan *maybe-candidate-regex* match-string)))
-                   (not-a-li (not (clss:node-matches-p "li p" node)))
-                   (text-content (string-trim serapeum:whitespace (plump:text node)))
-                   (text-content-length (length text-content))
-                   (length-sufficient (>= text-content-length *min-content-length*)))
-                (sqrt (- text-content-length *min-content-length*)))
-          when score
-            do (incf max-score score)
-          when (> max-score *min-score*)
-            do (return t)
-          finally (return nil))))
+(defmethod is-readerable :around ((document plump:root))
+  "An :around method for the default `is-readerable' to override the `*visibility-checker*'."
+  (let ((*visibility-checker* #'node-visible-p))
+    (call-next-method)))
 
 ;;; XXX Readability._unwrapNoscriptImages()
 (defmethod unwrap-noscript-images ((document plump:nesting-node))

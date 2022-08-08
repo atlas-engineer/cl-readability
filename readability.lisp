@@ -3,73 +3,52 @@
 
 (in-package #:readability)
 
-(defvar *min-content-length* 140
-  "The minimum node content length used to decide if the document is readerable.")
+(defgeneric qs (root css-selector)
+  (:documentation "Select the first element in the ROOT matching the CSS-SELECTOR.
 
-(defvar *min-score* 20
-  "The minumum cumulated 'score' used to determine if the document is readerable.")
+Return a single element node."))
+(defgeneric qsa (root css-selector)
+  (:documentation "Select all the elements in the ROOT matching the CSS-SELECTOR.
 
-(defvar *unlikely-candidate-regex*
-  "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
+Return a list."))
+(defgeneric attr (element attribute)
+  ;; TODO: add a condition class for attribute not applicable error.
+  (:documentation "Get an attribute value from the element.
 
-;;; XXX: Readability.UNLIKELY_ROLES
-(defvar *unlikely-roles*
-  (list "menu" "menubar" "complementary" "navigation" "alert" "alertdialog" "dialog"))
+If there's none, return NIL.
 
-(defvar *maybe-candidate-regex*
-  "and|article|body|column|content|main|shadow")
-
-(defvar *visibility-checker* nil
-  "The function used to determine if a node is visible.")
-
-(defvar *preserved-classes* nil
-  "The of classes to preserve on HTML elements.
-If nil, preserve nothing.
-If t, preserve everything.
-If a list of strings, preserve this exact list of classes.")
-
-(defvar *phrasing-elements*
-  '("ABBR" "AUDIO" "B" "BDO" "BR" "BUTTON" "CITE" "CODE" "DATA"
-    "DATALIST" "DFN" "EM" "EMBED" "I" "IMG" "INPUT" "KBD" "LABEL"
-    "MARK" "MATH" "METER" "NOSCRIPT" "OBJECT" "OUTPUT" "PROGRESS" "Q"
-    "RUBY" "SAMP" "SCRIPT" "SELECT" "SMALL" "SPAN" "STRONG" "SUB"
-    "SUP" "TEXTAREA" "TIME" "VAR" "WBR")
-  "Types of tags that usually include sensible text.")
-
-(defvar *max-elements* nil
-  "Max number of nodes supported by the parser.
-Defaults to nil (no limit).")
-
-(defvar *max-top-candidates* 5
-  "The number of top candidates to consider when analysing how tight
-  the competition is among candidates.")
-
-(defvar *tags-to-score*
-  '("SECTION" "H2" "H3" "H4" "H5" "H6" "P" "TD" "PRE")
-  "Element tags to score by default.")
-
-(defvar *char-threshold* 500
-  "The default number of chars an article must have in order to return a result.")
-
-(define-condition too-many-elements-error (error)
-  ((possible-maximum
-    :initform *max-elements*
-    :accessor possible-maximum
-    :initarg :possible-maximum)
-   (number-of-elements
-    :initform nil
-    :accessor number-of-elements
-    :initarg :number-of-elements))
-  (:report
-   (lambda (condition stream)
-     (format stream
-             "Too many elements in the document: found ~d, expected no more than ~d"
-             (number-of-elements condition) (possible-maximum condition))))
-  (:documentation "A condition to signal when the number of elements to parse is too large.
-See `*max-elements*'."))
+MUST have a setf-method."))
+(defgeneric matches (element css-selector)
+  (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
+(defgeneric inner-text (element)
+  (:documentation "Return the inner text of ELEMENT as a plain non-HTML string."))
 
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)
+  (:method ((root t))
+    "Default method doing the most sensible readability checking possible.
+
+Relies on the `qsa', `attr', `matches', and `inner-text' generics
+being defined for a certain back-end."
+    (let ((nodes (qsa root "p, pre, article, div > br")))
+      (loop with max-score = 0
+            for node in nodes
+            for score
+              = (serapeum:and-let*
+                    ((match-string (uiop:strcat (attr node "class") " " (attr node "id")))
+                     (visible-p (funcall *visibility-checker* node))
+                     (likely-candidate (or (not (cl-ppcre:scan *unlikely-candidate-regex* match-string))
+                                           (cl-ppcre:scan *maybe-candidate-regex* match-string)))
+                     (not-a-li (not (matches node "li p")))
+                     (text-content (string-trim serapeum:whitespace (inner-text node)))
+                     (text-content-length (length text-content))
+                     (length-sufficient (>= text-content-length *min-content-length*)))
+                  (sqrt (- text-content-length *min-content-length*)))
+            when score
+              do (incf max-score score)
+            when (> max-score *min-score*)
+              do (return t)
+            finally (return nil))))
   (:documentation
    "Decides whether or not the document is reader-able without parsing the whole thing.
 

@@ -10,6 +10,8 @@
   :serial t
   :depends-on (cl-ppcre serapeum alexandria)
   :components ((:file "package")
+               (:file "globals")
+               (:file "conditions")
                (:file "readability")))
 
 (defsystem readability/plump
