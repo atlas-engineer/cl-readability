@@ -2,7 +2,7 @@
 ;;;; SPDX-License-Identifier: BSD-3-Clause
 
 (defsystem readability
-  :description ""
+  :description "Extract meaningful text and other meta-information from HTML documents."
   :author "Atlas Engineer LLC"
   :homepage "https://github.com/atlas-engineer/cl-readability"
   :license  "BSD 3-Clause"
