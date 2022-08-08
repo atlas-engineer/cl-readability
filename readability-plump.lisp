@@ -17,6 +17,9 @@
   ;; FIXME: This often returns meaningless text for <style> and
   ;; <script> elements. Maybe re-write the logic somehow?
   (plump:text node))
+(defmethod remove-child ((node plump:child-node))
+  (when (plump:parent node)
+    (plump:remove-child node)))
 
 (defun smember (string list-of-string)
   "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
@@ -29,10 +32,6 @@
        ;; node.className.indexOf("fallback-image") !== -1
        (or (not (plump:has-attribute node "aria-hidden"))
            (not (string-equal (plump:get-attribute node "aria-hidden") "true")))))
-
-(defmethod remove-child* ((node plump:child-node))
-  (when (plump:parent node)
-    (plump:remove-child node)))
 
 (defmethod is-readerable :around ((document plump:root))
   "An :around method for the default `is-readerable' to override the `*visibility-checker*'."
@@ -215,14 +214,14 @@
   t)
 
 (defmethod phrasing-content-p ((node plump:comment))
-  (remove-child* node)
+  (remove-child node)
   nil)
 
 (defmethod whitespace-node-p ((node plump:text-node))
   (zerop (length (string-trim serapeum:whitespace (plump:text node)))))
 
 (defmethod whitespace-node-p ((node plump:comment))
-  (remove-child* node)
+  (remove-child node)
   t)
 
 (defmethod whitespace-node-p ((node plump:element))
@@ -314,23 +313,23 @@
                                           (plump:get-attribute node "id"))
           when (and *visibility-checker*
                     (not (funcall *visibility-checker* node)))
-            do (remove-child* node)
+            do (remove-child node)
                ;; TODO: this._checkByline(node, matchString)
           when (and (ppcre:scan *unlikely-candidate-regex* match-string)
                     (not (ppcre:scan *maybe-candidate-regex* match-string))
                     (not (has-ancestor-tag node "table"))
                     (not (has-ancestor-tag node "code"))
                     (not (clss:node-matches-p "body,a" node)))
-            do (remove-child* node)
+            do (remove-child node)
           when (and (plump:get-attribute node "role")
                     (smember (plump:get-attribute node "role") *unlikely-roles* ))
-            do (remove-child* node)
+            do (remove-child node)
           when (plump:comment-p node)
-            do (remove-child* node)
+            do (remove-child node)
           when (and (smember (plump:tag-name node)
                              (list "div" "section" "header" "h1" "h2" "h3" "h4" "h5" "h6"))
                     (without-content-p node))
-            do (remove-child* node)
+            do (remove-child node)
           when (and (plump:element-p node)
                     (plump:parent node)
                     (string-equal "div" (plump:tag-name node)))
@@ -339,7 +338,7 @@
                   (if (and (phrasing-content-p c2)
                            (not (whitespace-node-p c2)))
                       (progn
-                        (remove-child* c2)
+                        (remove-child c2)
                         (plump:append-child c1 c2)
                         c1)
                       (if (zerop (length (plump:children c1)))
@@ -368,7 +367,7 @@
          (plump:xml-header-p node)
          (and (plump:text-node-p node)
               (uiop:emptyp (get-inner-text node))))
-     (remove-child* node))
+     (remove-child node))
     ((plump:nesting-node-p node)
      (loop for child across (plump:children node)
            do (remove-non-elements child)))))

@@ -22,6 +22,9 @@ MUST have a setf-method."))
   (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric inner-text (element)
   (:documentation "Return the inner text of ELEMENT as a plain non-HTML string."))
+(defgeneric remove-child (child)
+  (:documentation "Remove CHILD from its parent element, effectively removing it from DOM.
+In case there's no parent, do nothing."))
 
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)
