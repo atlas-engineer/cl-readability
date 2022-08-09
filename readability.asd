@@ -16,5 +16,5 @@
                (:file "readability")))
 
 (defsystem readability/plump
-  :depends-on (readability plump clss quri)
+  :depends-on (readability plump clss)
   :components ((:file "readability-plump")))
