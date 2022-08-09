@@ -3,6 +3,8 @@
 
 (in-package #:readability)
 
+;;; The API to implement on the side of a certain backend.
+
 (defgeneric qs (root css-selector)
   (:documentation "Select the first element in the ROOT matching the CSS-SELECTOR.
 
@@ -24,6 +26,9 @@ MUST have a setf-method."))
   (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric inner-text (element)
   (:documentation "Return the inner text of ELEMENT as a plain non-HTML string."))
+(defgeneric children (element)
+  (:documentation "Get a list of ELEMENT children.
+Only elements are listed."))
 (defgeneric remove-child (child)
   (:documentation "Remove CHILD from its parent element, effectively removing it from DOM.
 In case there's no parent, do nothing."))
@@ -33,6 +38,22 @@ In case there's no parent, do nothing."))
 This usually means replacing the ELEMENT with a newly-created element with TAG-NAME.
 
 Owes a terrible name to Readability._setTagName() method."))
+
+;; Methods that depend on the API and that `is-readerable' and `parse'
+;; depend on. Those should work just fine given proper implementation
+;; of the API methods above:
+
+(defgeneric without-content-p (element)
+  (:method without-content-p ((element t))
+    (and (zerop (length (string-trim serapeum:whitespace (inner-text element))))
+         (or (zerop (length (children element)))
+             (= (length (children element))
+                (+ (length (qsa "br" element))
+                   (length (qsa "hr" element)))))))
+  (:documentation "Whether the element is empty.
+Default method checks `inner-text' and element `children'.
+
+A copy of Readability._isElementWithoutContent()."))
 
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)

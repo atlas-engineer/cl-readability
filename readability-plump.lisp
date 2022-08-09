@@ -26,6 +26,8 @@
                   'plump:element
                   :tag-name tag-name
                   :children (plump:children element))))
+(defmethod children ((element plump:element))
+  (coerce (plump:child-elements element) 'list))
 
 (defun smember (string list-of-string)
   "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
@@ -138,14 +140,6 @@
           (unless (uiop:emptyp (plump:get-attribute element "id"))
             (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
                (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
-
-;;; XXX: Readability._isElementWithoutContent()
-(defmethod without-content-p ((element plump:element))
-  (and (zerop (length (string-trim serapeum:whitespace (plump:text element))))
-       (or (zerop (length (plump:children element)))
-           (= (length (plump:children element))
-              (+ (length (clss:select "br" element))
-                 (length (clss:select "hr" element)))))))
 
 ;;; XXX: Readability._simplifyNestedElements
 (defmethod simplify-nested-elements ((element plump:nesting-node))
