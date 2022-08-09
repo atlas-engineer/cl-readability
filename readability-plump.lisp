@@ -328,24 +328,25 @@
           )
     body))
 
+(defun remove-non-elements (node)
+  (cond
+    ;; We can't remove those in `grab-article', because CLSS doesn't
+    ;; grab non-element nodes :/
+    ;;
+    ;; FIXME: We need to remove those because Plump somewhy considers
+    ;; comment and CDATA nodes as textual in `plump:text'.
+    ((or (plump:cdata-p node)
+         (plump:comment-p node)
+         (plump:xml-header-p node)
+         (and (plump:text-node-p node)
+              (uiop:emptyp (get-inner-text node))))
+     (remove-child node))
+    ((plump:nesting-node-p node)
+     (loop for child across (plump:children node)
+           do (remove-non-elements child)))))
+
 (defmethod post-process-content :after ((node plump:node))
-  ;; We can't remove those in `grab-article', because CLSS doesn't
-  ;; grab non-element nodes :/
-  ;;
-  ;; FIXME: We need to remove those because Plump somewhy considers
-  ;; comment and CDATA nodes as textual in `plump:text'.
-  (labels ((remove-non-elements (element)
-             (cond
-               ((or (plump:cdata-p node)
-                    (plump:comment-p node)
-                    (plump:xml-header-p node)
-                    (and (plump:text-node-p node)
-                         (uiop:emptyp (get-inner-text node))))
-                (remove-child node))
-               ((plump:nesting-node-p node)
-                (loop for child across (plump:children node)
-                      do (remove-non-elements child))))))
-    (remove-non-elements node)))
+  (remove-non-elements node))
 
 (defmethod nparse ((document plump:nesting-node) url)
   (alexandria:when-let* ((max *max-elements*)
