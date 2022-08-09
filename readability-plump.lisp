@@ -20,6 +20,8 @@
   (plump:set-attribute element attribute value))
 (defmethod (setf attr) ((value t) (element plump:element) (attribute string))
   (plump:set-attribute element attribute (princ-to-string value)))
+(defmethod attrs ((element plump:element))
+  (alexandria:hash-table-keys (plump:attributes element)))
 (defmethod matches ((element plump:element) selector)
   (clss:node-matches-p selector element))
 (defmethod inner-text ((node plump:node))
@@ -29,6 +31,8 @@
 (defmethod remove-child ((node plump:child-node))
   (when (plump:parent node)
     (plump:remove-child node)))
+(defmethod replace-child ((plump:child-node child) (plump:child-node replacement))
+  (plump:replace-child child replacement))
 (defmethod set-tag-name ((element plump:element) tag-name)
   (plump:replace-child
    element (apply #'make-instance
@@ -37,10 +41,9 @@
                   :children (plump:children element))))
 (defmethod children ((element plump:element))
   (coerce (plump:child-elements element) 'list))
-
-(defun smember (string list-of-string)
-  "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
-  (member string list-of-string :test #'string-equal))
+(defmethod make-text-node ((text string))
+  ;; TODO: Somehow avoid `plump:make-root'.
+  (plump:make-text-node (plump:make-root) text))
 
 (defmethod node-visible-p ((node plump:element))
   ;; TODO: (!node.style || node.style.display != "none")
@@ -75,29 +78,6 @@
     (plump:remove-attribute node "class")
     (loop for child across (plump:children node)
           do (normalize-classes child))))
-
-;;; XXX: Readability._fixRelativeUris
-(defmethod fix-relative-urls ((node plump:nesting-node) absolute-uri)
-  (flet ((relative->absolute (uri)
-           (when (and uri (not (uiop:emptyp (ignore-errors (quri:render-uri (quri:uri uri))))))
-             (quri:render-uri (quri:merge-uris (quri:uri uri) (quri:uri absolute-uri))))))
-    (loop for elem across (clss:select "a, img, picture, figure, video, audio, source" node)
-          for href =  (plump:get-attribute elem "href")
-          for src = (plump:get-attribute elem "src")
-          for poster = (plump:get-attribute elem "poster")
-          ;; TODO: srcset
-          unless (uiop:emptyp src)
-            do (plump:set-attribute elem "src" (relative->absolute src))
-          unless (uiop:emptyp poster)
-            do (plump:set-attribute elem "poster" (relative->absolute poster))
-          when (and href (string= "javascript:" (quri:uri-scheme (quri:uri href))))
-            ;; TODO: if the link only contains simple text content, it
-            ;; can be converted to a text node
-            ;;
-            ;; Replace the link with a span to preserve children.
-            do (set-tag-name elem "span")
-          else unless (uiop:emptyp href)
-                 do (plump:set-attribute elem "href" (relative->absolute href)))))
 
 ;;; XXX: Readability._getNextNode()
 (defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
@@ -149,21 +129,6 @@
           (unless (uiop:emptyp (plump:get-attribute element "id"))
             (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
                (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
-
-;;; XXX: Readability._simplifyNestedElements
-(defmethod simplify-nested-elements ((element plump:nesting-node))
-  (loop for node = element then (get-next-node node)
-        for parent = (ignore-errors (plump:parent node))
-        while node
-        when (and (clss:node-matches-p "div, section" node)
-                  (without-content-p node))
-          do (plump:remove-child node)
-        else when (and (serapeum:single (plump:children node))
-                       (plump:element-p (elt (plump:children node) 0)))
-               do (plump:replace-child
-                   node (serapeum:lret ((child (elt (plump:children node) 0)))
-                          (setf (slot-value child 'plump-dom::%attributes)
-                                (plump:attributes node))))))
 
 ;;; XXX: Readability._getArticleTitle()
 (defmethod get-article-title ((element plump:element))
@@ -354,7 +319,7 @@
           )
     body))
 
-(defmethod remove-non-elements ((node plump:node))
+(defmethod post-process-content :after ((node plump:node))
   ;; We can't remove those in `grab-article', because CLSS doesn't
   ;; grab non-element nodes :/
   ;;
@@ -370,13 +335,6 @@
     ((plump:nesting-node-p node)
      (loop for child across (plump:children node)
            do (remove-non-elements child)))))
-
-(defmethod post-process-content ((element plump:nesting-node) url)
-  (fix-relative-urls element url)
-  (simplify-nested-elements element)
-  (normalize-classes element)
-  (remove-non-elements element)
-  element)
 
 (defmethod nparse ((document plump:nesting-node) url)
   (alexandria:when-let* ((max *max-elements*)
@@ -394,6 +352,7 @@
         else do (plump:remove-child node))
   (prepare-document document)
   (let* ((doc document)
+         (*document-url* url)
          (lang (alexandria:when-let ((html (clss:select "html" doc)))
                  (plump:get-attribute (elt html 0) "lang")))
          ;; TODO: var metadata = this._getArticleMetadata(jsonLd);
