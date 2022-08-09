@@ -21,7 +21,9 @@ If there's none, return NIL.
 If the ELEMENT has no way to get attributes (which usually means it's
 not an HTML element), throw `no-attributes-error'.
 
-MUST have a setf-method."))
+MUST have a setf-method. Accept any type of data and convert it to
+string before setf-ing the value. If the value is NIL, remove the
+attribute."))
 (defgeneric matches (element css-selector)
   (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric inner-text (element)
