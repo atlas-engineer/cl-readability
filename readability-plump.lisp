@@ -31,14 +31,15 @@
 (defmethod remove-child ((node plump:child-node))
   (when (plump:parent node)
     (plump:remove-child node)))
-(defmethod replace-child ((plump:child-node child) (plump:child-node replacement))
+(defmethod replace-child ((child plump:child-node) (replacement plump:child-node))
   (plump:replace-child child replacement))
 (defmethod set-tag-name ((element plump:element) tag-name)
   (plump:replace-child
    element (apply #'make-instance
                   'plump:element
                   :tag-name tag-name
-                  :children (plump:children element))))
+                  :children (plump:children element)
+                  nil)))
 (defmethod children ((element plump:element))
   (coerce (plump:child-elements element) 'list))
 (defmethod make-text-node ((text string))
@@ -362,7 +363,7 @@
          ;; TODO: var articleContent = this._grabArticle();
          (doc (grab-article doc))
          ;; XXX: this._postProcessContent(articleContent);
-         (doc (post-process-content doc url)))
+         (doc (post-process-content doc)))
     ;; TODO: Find excerpt.
     (values doc
             (plump:serialize doc nil)
