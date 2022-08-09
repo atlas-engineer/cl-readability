@@ -61,8 +61,8 @@ Owes a terrible name to Readability._setTagName() method."))
     (and (zerop (length (string-trim serapeum:whitespace (inner-text element))))
          (or (zerop (length (children element)))
              (= (length (children element))
-                (+ (length (qsa "br" element))
-                   (length (qsa "hr" element)))))))
+                (+ (length (qsa element "br"))
+                   (length (qsa element "hr")))))))
   (:documentation "Whether the element is empty.
 Default method checks `inner-text' and element `children'.
 
