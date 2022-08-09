@@ -12,6 +12,7 @@
   :components ((:file "package")
                (:file "globals")
                (:file "conditions")
+               (:file "utils")
                (:file "readability")))
 
 (defsystem readability/plump
