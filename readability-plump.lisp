@@ -326,16 +326,18 @@
   ;;
   ;; FIXME: We need to remove those because Plump somewhy considers
   ;; comment and CDATA nodes as textual in `plump:text'.
-  (cond
-    ((or (plump:cdata-p node)
-         (plump:comment-p node)
-         (plump:xml-header-p node)
-         (and (plump:text-node-p node)
-              (uiop:emptyp (get-inner-text node))))
-     (remove-child node))
-    ((plump:nesting-node-p node)
-     (loop for child across (plump:children node)
-           do (remove-non-elements child)))))
+  (labels ((remove-non-elements (element)
+             (cond
+               ((or (plump:cdata-p node)
+                    (plump:comment-p node)
+                    (plump:xml-header-p node)
+                    (and (plump:text-node-p node)
+                         (uiop:emptyp (get-inner-text node))))
+                (remove-child node))
+               ((plump:nesting-node-p node)
+                (loop for child across (plump:children node)
+                      do (remove-non-elements child))))))
+    (remove-non-elements node)))
 
 (defmethod nparse ((document plump:nesting-node) url)
   (alexandria:when-let* ((max *max-elements*)
