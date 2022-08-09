@@ -20,6 +20,12 @@
 (defmethod remove-child ((node plump:child-node))
   (when (plump:parent node)
     (plump:remove-child node)))
+(defmethod set-tag-name ((element plump:element) tag-name)
+  (plump:replace-child
+   element (apply #'make-instance
+                  'plump:element
+                  :tag-name tag-name
+                  :children (plump:children element))))
 
 (defun smember (string list-of-string)
   "A frequent case: find a STRING in LIST-OF-STRINGS case-insensitively."
@@ -51,16 +57,6 @@
   ;; TODO: noscript cleaning.
   )
 
-;; XXX: Readability._setTagName()
-(defmethod replace-with-tag ((node plump:node) tag-name)
-  (plump:replace-child
-   node (apply #'make-instance
-               (type-of node)
-               :tag-name tag-name
-               :parent nil
-               (when (plump:nesting-node-p node)
-                 (list :children (plump:children node))))))
-
 ;; XXX: A free rewrite of Readability._cleanClasses()
 (defmethod normalize-classes ((node plump:node))
   ;; TODO: Classes to preserve.
@@ -88,7 +84,7 @@
             ;; can be converted to a text node
             ;;
             ;; Replace the link with a span to preserve children.
-            do (replace-with-tag elem "span")
+            do (set-tag-name elem "span")
           else unless (uiop:emptyp href)
                  do (plump:set-attribute elem "href" (relative->absolute href)))))
 
@@ -186,7 +182,7 @@
         do (plump:remove-child style))
   ;; Remove BRs
   (loop for font across (clss:select "font" element)
-        do (replace-with-tag font "span")))
+        do (set-tag-name font "span")))
 
 (defmethod recursive-parents ((node plump:child-node) &key (max-depth 3))
   (labels ((parents (node depth)

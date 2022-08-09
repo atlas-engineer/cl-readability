@@ -27,6 +27,12 @@ MUST have a setf-method."))
 (defgeneric remove-child (child)
   (:documentation "Remove CHILD from its parent element, effectively removing it from DOM.
 In case there's no parent, do nothing."))
+(defgeneric set-tag-name (element tag-name)
+  (:documentation "Change the ELEMENT tag name to TAG-NAME.
+
+This usually means replacing the ELEMENT with a newly-created element with TAG-NAME.
+
+Owes a terrible name to Readability._setTagName() method."))
 
 (export-always 'is-readerable)
 (defgeneric is-readerable (document)
