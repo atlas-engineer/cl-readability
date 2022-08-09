@@ -8,7 +8,7 @@
   :license  "BSD 3-Clause"
   :version "0.0.1"
   :serial t
-  :depends-on (cl-ppcre serapeum alexandria)
+  :depends-on (cl-ppcre serapeum alexandria quri)
   :components ((:file "package")
                (:file "globals")
                (:file "conditions")
