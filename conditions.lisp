@@ -19,3 +19,11 @@
              (number-of-elements condition) (possible-maximum condition))))
   (:documentation "A condition to signal when the number of elements to parse is too large.
 See `*max-elements*'."))
+
+(define-condition no-attributes-error (error)
+  ((node
+    :accessor node
+    :initarg :node))
+  (:report
+   (lambda (condition stream)
+     (format stream "Tried to get attributes of ~a, but it has no attributes." (node condition)))))

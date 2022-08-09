@@ -12,10 +12,12 @@ Return a single element node."))
 
 Return a list."))
 (defgeneric attr (element attribute)
-  ;; TODO: add a condition class for attribute not applicable error.
-  (:documentation "Get an attribute value from the element.
+  (:documentation "Get an ATTRIBUTE value from the ELEMENT.
 
 If there's none, return NIL.
+
+If the ELEMENT has no way to get attributes (which usually means it's
+not an HTML element), throw `no-attributes-error'.
 
 MUST have a setf-method."))
 (defgeneric matches (element css-selector)
