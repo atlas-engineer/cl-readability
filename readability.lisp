@@ -13,6 +13,8 @@ Return a single element node."))
   (:documentation "Select all the elements in the ROOT matching the CSS-SELECTOR.
 
 Return a list."))
+(defgeneric name (element)
+  (:documentation "Tag name of the element."))
 (defgeneric attr (element attribute)
   (:documentation "Get an ATTRIBUTE value from the ELEMENT.
 
