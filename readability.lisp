@@ -13,6 +13,8 @@ Return a single element node."))
   (:documentation "Select all the elements in the ROOT matching the CSS-SELECTOR.
 
 Return a list."))
+(defgeneric matches (element css-selector)
+  (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric name (element)
   (:documentation "Tag name of the element."))
 (defgeneric attr (element attribute)
@@ -26,8 +28,6 @@ not an HTML element), throw `no-attributes-error'.
 MUST have a setf-method. Accept any type of data and convert it to
 string before setf-ing the value. If the value is NIL, remove the
 attribute."))
-(defgeneric matches (element css-selector)
-  (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric inner-text (element)
   (:documentation "Return the inner text of ELEMENT as a plain non-HTML string."))
 (defgeneric children (element)
