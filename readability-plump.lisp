@@ -372,9 +372,9 @@
          ;; TODO: this._articleTitle = metadata.title;
          (title nil)
          ;; TODO: var articleContent = this._grabArticle();
-         (doc (grab-article doc))
-         ;; XXX: this._postProcessContent(articleContent);
-         (doc (post-process-content doc)))
+         (doc (grab-article doc)))
+    ;; XXX: this._postProcessContent(articleContent);
+    (post-process-content doc)
     ;; TODO: Find excerpt.
     (values doc
             (plump:serialize doc nil)
