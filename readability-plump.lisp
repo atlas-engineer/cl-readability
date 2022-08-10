@@ -80,14 +80,6 @@
   ;; TODO: noscript cleaning.
   )
 
-;; XXX: A free rewrite of Readability._cleanClasses()
-(defmethod normalize-classes ((node plump:node))
-  ;; TODO: Classes to preserve.
-  (when (plump:element-p node)
-    (plump:remove-attribute node "class")
-    (loop for child across (plump:children node)
-          do (normalize-classes child))))
-
 ;;; XXX: Readability._getNextNode()
 (defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
   (declare (ignore ignore-self-and-kids))
