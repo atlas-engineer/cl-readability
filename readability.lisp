@@ -74,7 +74,9 @@ A copy of Readability._isElementWithoutContent()."))
     (simplify-nested-elements element)
     (unless *keep-classes*
       (clean-classes element)))
-  (:documentation "Run any post-process modifications to article content (ELEMENT) as necessary."))
+  (:documentation "Run any post-process modifications to article content (ELEMENT) as necessary.
+
+Readability._PostProcessContent()."))
 
 ;; TODO: Meaningless? Replace with mapcar?
 (defgeneric remove-nodes (nodes &optional filter)
@@ -87,18 +89,23 @@ A copy of Readability._isElementWithoutContent()."))
         (t (remove-child node)))))
   (:documentation "Iterate over NODES, call FILTER for each node and remove it if FILTER returned true.
 
-If function is not passed, remove all the nodes in NODES."))
+If function is not passed, remove all the nodes in NODES.
+
+Readability._removeNodes()."))
 
 ;; TODO: Meaningless? Replace with mapcar?
 (defgeneric replace-node-tags (nodes new-tag-name)
   (:method ((nodes t) (new-tag-name string))
     (dolist (node nodes)
       (set-tag-name node new-tag-name)))
-  (:documentation "Iterates over NODES, and calls `set-node-tag' for each node with NEW-TAG-NAME."))
+  (:documentation "Iterates over NODES, and calls `set-node-tag' for each node with NEW-TAG-NAME.
+
+Readability._replaceNodeTags()."))
 
 (defgeneric get-all-nodes-with-tag (node &rest tag-names)
   (:method ((node t) &rest tag-names)
-    (alexandria:mappend (alexandria:curry #'qsa node) tag-names)))
+    (alexandria:mappend (alexandria:curry #'qsa node) tag-names))
+  (:documentation "Readability._getAllNodesWithTag()."))
 
 (defgeneric clean-classes (element)
   (:method ((element t))
@@ -112,7 +119,9 @@ If function is not passed, remove all the nodes in NODES."))
       (mapc #'clean-classes (children element))))
   (:documentation "Removes the class attribute from every element in the given ELEMENT subtree.
 
-Ignores classes those that match `*preserved-classes*'."))
+Ignores classes those that match `*preserved-classes*'.
+
+Readability._cleanClasses()."))
 
 (defgeneric fix-relative-urls (element)
   (:method ((element t))
@@ -152,7 +161,9 @@ Ignores classes those that match `*preserved-classes*'."))
         ;;   media.setAttribute("srcset", newSrcset);
         ;; }
         )))
-  (:documentation "Converts each <a> and <img> uri in the given element to an absolute URI, ignoring #ref URIs."))
+  (:documentation "Converts each <a> and <img> uri in the given element to an absolute URI, ignoring #ref URIs.
+
+Readability._fixRelativeUris()"))
 
 (defgeneric simplify-nested-elements (element)
   (:method ((element t))
@@ -174,7 +185,7 @@ Ignores classes those that match `*preserved-classes*'."))
               (setf (attr child attr) (attr element attr)))
             (simplify-nested-elements (first (children element))))))))
     (mapc #'simplify-nested-elements (children element)))
-  (:documentation "Readability._simplifyNestedElements()"))
+  (:documentation "Readability._simplifyNestedElements()."))
 
 ;; The toplevel API.
 
