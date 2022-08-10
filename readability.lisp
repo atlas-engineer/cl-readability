@@ -37,6 +37,8 @@ attribute."))
 (defgeneric children (element)
   (:documentation "Get a list of ELEMENT children.
 Only elements are listed."))
+(defgeneric next-sibling (element)
+  (:documentation "Get next sibling for an ELEMENT or NIL if there's none."))
 (defgeneric remove-child (child)
   (:documentation "Remove CHILD from its parent element, effectively removing it from DOM.
 In case there's no parent, do nothing."))
