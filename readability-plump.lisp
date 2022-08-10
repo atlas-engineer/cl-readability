@@ -131,20 +131,6 @@
             (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
                (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
 
-;;; XXX: Readability._getArticleTitle()
-(defmethod get-article-title ((element plump:element))
-  (let* ((original-title (elt (clss:select "title" element) 0))
-         (title-parts (cl-ppcre:split " [\\|\\-\\\\\\/>»:] " original-title)))
-    ;; TODO: Parse colon-delimited titles properly. Requires some refactoring.
-    (cond
-      ((> 5 (length (serapeum:tokens (alexandria:lastcar title-parts))) 3)
-       (alexandria:lastcar title-parts))
-      ((> 5 (length (serapeum:tokens (first title-parts))) 3)
-       (first title-parts))
-      ((serapeum:single (clss:select "h1" element))
-       (plump:text (elt (clss:select "h1" element) 0)))
-      (t original-title))))
-
 ;; TODO: Replace with the cleaning loops and BR cleaning call?
 (defmethod prepare-document ((element plump:nesting-node))
   (loop for style across (clss:select "style" element)

@@ -187,6 +187,56 @@ Readability._fixRelativeUris()"))
     (mapc #'simplify-nested-elements (children element)))
   (:documentation "Readability._simplifyNestedElements()."))
 
+(defgeneric get-article-title (element)
+  (:method ((element t))
+    (let* ((original-title
+             (trim (inner-text (qs "title" element))))
+           (hierarchical-p nil)
+           (current-title
+             (cond
+               ((cl-ppcre:scan " [\\|\\-\\\\\\/>»] " original-title)
+                (setf hierarchical-p
+                      (cl-ppcre:scan " [\\\\\\/>»] " original-title))
+                (let* ((parts (cl-ppcre:split " [\\|\\-\\\\\\/>»] " original-title))
+                       (first-part (first parts))
+                       (second-part (second parts)))
+                  (cond
+                    ((>= (word-count first-part) 3)
+                     first-part)
+                    (second-part second-part)
+                    (t original-title))))
+               ((search ": " original-title)
+                (let ((headings (qsa "h1, h2" element)))
+                  (or (find-if (lambda (heading)
+                                 (string-equal (trim (inner-text heading)) original-title))
+                               headings)
+                      (let* ((parts (uiop:split-string original-title :separator '(#\:)))
+                             (last-part (alexandria:lastcar parts))
+                             (first-part (first parts)))
+                        (cond
+                          ((>= (word-count last-part) 3)
+                           last-part)
+                          ((<= (word-count first-part) 5)
+                           first-part)
+                          (t original-title))))))
+               ((and (not (< 15 (length original-title) 150))
+                     (serapeum:single (qsa "h1" element)))
+                (inner-text (qs "h1" element)))
+               (t original-title)))
+           (current-title
+             (cl-ppcre:regex-replace-all *normalize-regex* (trim current-title) " "))
+           (title-word-count (word-count current-title)))
+      (if (and (<= title-word-count 4)
+               (or (not hierarchical-p)
+                   (/= title-word-count
+                       (1- (word-count (cl-ppcre:regex-replace-all
+                                        "[\\|\\-\\\\\\/>»]+" original-title ""))))))
+          original-title
+          current-title)))
+  (:documentation "Get the article title as an H1.
+
+Readability._getArticleTitle()."))
+
 ;; The toplevel API.
 
 (export-always 'is-readerable)

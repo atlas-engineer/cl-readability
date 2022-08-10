@@ -88,7 +88,9 @@ Defaults to nil (no limit).")
 (defvar *byline-regex*
   "byline|author|dateline|writtenby|p-author")
 
-;; TODO: replaceFonts, normalize
+(defvar *normalize-regex* "\\s{2,}")
+
+;; TODO: replaceFonts
 
 (defvar *videos-regex*
   "\\/\\/(www\\.)?((dailymotion|youtube|youtube-nocookie|player\\.vimeo|v\\.qq)\\.com|(archive|upload\\.wikimedia)\\.org|player\\.twitch\\.tv)")
