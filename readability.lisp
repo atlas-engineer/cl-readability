@@ -53,6 +53,8 @@ In case there's no parent and/or REPLACEMENT, do nothing."))
 
 This usually means replacing the ELEMENT with a newly-created element with TAG-NAME.
 
+Return the element with a new name, even if new.
+
 Owes a terrible name to Readability._setTagName() method."))
 (defgeneric make-text-node (text)
   (:documentation "Make a text node with TEXT content."))
@@ -241,6 +243,56 @@ Readability._fixRelativeUris()"))
   (:documentation "Get the article title as an H1.
 
 Readability._getArticleTitle()."))
+
+(defgeneric phrasing-context-p (node)
+  (:method ((node t))
+    (or
+     ;; TODO: check for being text node
+     (smember (name node) *phrasing-elements*)
+     (and (smember (name node) '("a" "del" "ins"))
+          ;; FIXME: node.childNodes
+          (every #'phrasing-context-p (children node)))))
+  (:documentation "Determine if a node qualifies as phrasing content.
+https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phrasing_content
+
+Readability._isPhrasingContent()."))
+
+(defgeneric replace-brs (element)
+  (:method ((element t))
+    (dolist (br (qsa element "br"))
+      (when (parent br)
+        (let ((replaced-p nil))
+          (loop for next = br then (next-sibling next)
+                while (and next (ignore-errors (not (matches next "br"))))
+                do (progn
+                     (remove-child next)
+                     (setf replaced-p t)))
+          (when replaced-p
+            (loop with p = (set-tag-name br "p")
+                  for next = (next-sibling p) then (next-sibling next)
+                  until (and (matches next "br")
+                             (matches (next-sibling next) "br"))
+                  while (phrasing-context-p next)
+                  do (append-child p next)))))))
+  (:documentation "Replaces 2 or more successive <br> elements with a single <p>.
+Whitespace between <br> elements are ignored. For example:
+
+ <div>foo<br>bar<br> <br><br>abc</div>
+
+will become:
+
+ <div>foo<br>bar<p>abc</p></div>
+
+Readability._replaceBrs()."))
+
+(defgeneric prepare-document (element)
+  (:method ((element t))
+    (mapc #'remove-child (qsa element "style"))
+    (replace-brs element)
+    (dolist (font (qsa element "font" ))
+      (set-tag-name font "span")))
+  (:documentation "Prepare the HTML document for readability to scrape it.
+This includes things like stripping javascript, CSS, and handling terrible markup."))
 
 ;; The toplevel API.
 

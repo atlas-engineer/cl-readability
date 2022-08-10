@@ -137,14 +137,6 @@
             (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
                (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
 
-;; TODO: Replace with the cleaning loops and BR cleaning call?
-(defmethod prepare-document ((element plump:nesting-node))
-  (loop for style across (clss:select "style" element)
-        do (plump:remove-child style))
-  ;; Remove BRs
-  (loop for font across (clss:select "font" element)
-        do (set-tag-name font "span")))
-
 (defmethod recursive-parents ((node plump:child-node) &key (max-depth 3))
   (labels ((parents (node depth)
              (when (and (plusp depth)
