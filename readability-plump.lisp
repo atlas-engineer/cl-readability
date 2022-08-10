@@ -32,6 +32,8 @@
   ;; FIXME: This often returns meaningless text for <style> and
   ;; <script> elements. Maybe re-write the logic somehow?
   (plump:text node))
+(defmethod append-child ((parent plump:nesting-node) (child plump:child-node))
+  (plump:append-child parent child))
 (defmethod remove-child ((node plump:child-node))
   (when (plump:parent node)
     (plump:remove-child node)))
