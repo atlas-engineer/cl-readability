@@ -54,6 +54,8 @@
   (coerce (plump:child-elements element) 'list))
 (defmethod next-sibling ((node plump:node))
   (plump:next-sibling node))
+(defmethod next-sibling ((node null))
+  nil)
 (defmethod make-text-node ((text string))
   ;; TODO: Somehow avoid `plump:make-root'.
   (plump:make-text-node (plump:make-root) text))

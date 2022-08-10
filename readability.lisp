@@ -38,7 +38,8 @@ attribute."))
   (:documentation "Get a list of ELEMENT children.
 Only elements are listed."))
 (defgeneric next-sibling (element)
-  (:documentation "Get next sibling for an ELEMENT or NIL if there's none."))
+  (:documentation "Get next sibling for an ELEMENT or NIL if there's none.
+SHOULD return NIL is ELEMENT is NIL."))
 (defgeneric append-child (parent child)
   (:documentation "Append CHILD to the end of PARENT children list."))
 (defgeneric remove-child (child)
