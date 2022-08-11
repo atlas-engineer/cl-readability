@@ -19,6 +19,8 @@
        (lambda (selector)
          (coerce (clss:select selector root) 'list))
        selectors)))
+(defmethod name ((element t))
+  nil)
 (defmethod name ((element plump:element))
   (plump:tag-name element))
 (defmethod name ((element plump:node))
@@ -58,12 +60,12 @@
 (defmethod replace-child ((child plump:child-node) (replacement plump:child-node))
   (plump:replace-child child replacement))
 (defmethod set-tag-name ((element plump:element) tag-name)
-  (plump:replace-child
-   element (apply #'make-instance
-                  'plump:element
-                  :tag-name tag-name
-                  :children (plump:children element)
-                  nil)))
+  (serapeum:lret ((new (apply #'make-instance 'plump:element
+                              :parent (plump:parent element)
+                              :tag-name tag-name
+                              :children (plump:children element)
+                              nil)))
+    (plump:replace-child element new)))
 ;; To conform to element-p.
 (defmethod parent ((element plump:element))
   (plump:parent element))
@@ -72,12 +74,18 @@
 (defmethod parent ((element plump:node))
   nil)
 (defmethod children ((element plump:element))
+  (coerce (plump:children element) 'list))
+(defmethod children-elements ((element plump:element))
   (coerce (plump:child-elements element) 'list))
 (defmethod next-sibling ((node plump:node))
-  (plump:next-sibling node))
+  (unless (or (null node)
+              (null (parent node))
+              (zerop (length (plump:family node)))
+              (eq node (plump:last-child (parent node))))
+    (plump:next-sibling node)))
 (defmethod next-sibling ((node null))
   nil)
-(defmethod text-node-p ((node plump:node))
+(defmethod text-node-p ((node t))
   (plump:text-node-p node))
 (defmethod make-text-node ((text string))
   ;; TODO: Somehow avoid `plump:make-root'.

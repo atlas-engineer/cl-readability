@@ -8,6 +8,7 @@
 (defun element-p (maybe-element)
   ;; The minimal set of methods to implement for a working API:
   (and
+   (not (text-node-p maybe-element))
    (find-method #'qsa nil (list (class-of maybe-element)) nil)
    (find-method #'name nil (list (class-of maybe-element)) nil)
    (find-method #'attr nil (list (class-of maybe-element)) nil)
@@ -31,10 +32,12 @@ Return a list of matching elements. If CSS-SELECTORS list is empty, return all
 the sub-elements of the ROOT."))
 (defgeneric matches (element &rest css-selectors)
   (:method ((element t) &rest css-selectors)
-    (find element (apply #'qsa (parent element) css-selectors)))
+    (when element
+      (find element (apply #'qsa (parent element) css-selectors))))
   (:documentation "Whether the ELEMENT matches the CSS-SELECTORS."))
 (defgeneric name (element)
-  (:documentation "Tag name of the element."))
+  (:documentation "Tag name of the element.
+Should return NIL is there's no name or the element is malformed."))
 (defgeneric attr (element &optional attribute)
   (:documentation "Get an ATTRIBUTE value from the ELEMENT.
 
@@ -53,15 +56,26 @@ attribute."))
 (defgeneric parent (element)
   (:documentation "Get a parent of the ELEMENT or NIL."))
 (defgeneric children (element)
-  (:documentation "Get a list of ELEMENT children.
-Should have a setf-method."))
+  (:documentation "Get a list of ELEMENT children."))
 (defgeneric children-elements (element)
   (:method ((element t))
     (remove-if-not #'element-p (children element)))
-  (:documentation "Get a list of ELEMENT children elements.
-Should have a setf-method."))
-(defgeneric next-sibling (element)
-  (:documentation "Get next sibling for an ELEMENT or NIL if there's none.
+  (:documentation "Get a list of ELEMENT children elements."))
+(defgeneric next-sibling (node)
+  (:documentation "Get next sibling node for a NODE or NIL if there's none.
+SHOULD return NIL is NODE is NIL."))
+(defgeneric next-node (node)
+  (:method ((node t))
+    (loop for next = node then (next-sibling next)
+          while (and next
+                     (not (element-p next))
+                     (every #'serapeum:whitespacep (inner-text next)))
+          finally (return next)))
+  (:documentation "Finds the next node, starting from the given NODE.
+Ignores whitespace in between.
+If the given node is an element, the same node is returned."))
+(defgeneric next-sibling-element (element)
+  (:documentation "Get next sibling element for an ELEMENT or NIL if there's none.
 SHOULD return NIL is ELEMENT is NIL."))
 (defgeneric append-child (parent child)
   (:documentation "Append CHILD to the end of PARENT children list."))
@@ -285,18 +299,22 @@ Readability._isPhrasingContent()."))
     (dolist (br (qsa element "br"))
       (when (parent br)
         (let ((replaced-p nil))
-          (loop for next = br then (next-sibling next)
-                while (and next (ignore-errors (not (matches next "br"))))
-                do (progn
-                     (remove-child next)
-                     (setf replaced-p t)))
+          (loop for next = (next-node (next-sibling br))
+                  then (next-node br-sibling)
+                for br-sibling = (next-sibling next)
+                while (and next (matches next "br"))
+                do (remove-child next)
+                do (setf replaced-p t))
           (when replaced-p
             (loop with p = (set-tag-name br "p")
-                  for next = (next-sibling p) then (next-sibling next)
-                  until (and (matches next "br")
-                             (matches (next-sibling next) "br"))
-                  while (phrasing-context-p next)
-                  do (append-child p next)))))))
+                  for next = (next-sibling p) then next-sibling
+                  for next-sibling = (next-sibling next)
+                  while (and next (phrasing-context-p next))
+                  do (remove-child next)
+                  do (append-child p next)
+                  when (and (matches next "br")
+                            (matches (next-node (next-sibling next)) "br"))
+                    do (return)))))))
   (:documentation "Replaces 2 or more successive <br> elements with a single <p>.
 Whitespace between <br> elements are ignored. For example:
 
