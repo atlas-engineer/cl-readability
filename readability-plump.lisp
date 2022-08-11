@@ -5,6 +5,13 @@
 
 (defmethod qs ((root plump:element) &optional selector)
   (elt (clss:select selector root) 0))
+(defmethod qsa ((root plump:nesting-node) &rest selectors)
+  (if (null selectors)
+      (coerce (clss:select "*" root) 'list)
+      (alexandria:mappend
+       (lambda (selector)
+         (coerce (clss:select selector root) 'list))
+       selectors)))
 (defmethod qsa ((root plump:element) &rest selectors)
   (if (null selectors)
       (coerce (clss:select "*" root) 'list)
