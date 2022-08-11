@@ -294,6 +294,12 @@ https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phras
 
 Readability._isPhrasingContent()."))
 
+(defgeneric whitespace-p (node)
+  (:method ((node t))
+    (or (and (text-node-p node) (every #'serapeum:whitespacep (inner-text node)))
+        (and (element-p node) (matches node "br"))))
+  (:documentation "Readability._isWhitespace()."))
+
 (defgeneric replace-brs (element)
   (:method ((element t))
     (dolist (br (qsa element "br"))
@@ -306,15 +312,20 @@ Readability._isPhrasingContent()."))
                 do (remove-child next)
                 do (setf replaced-p t))
           (when replaced-p
-            (loop with p = (set-tag-name br "p")
-                  for next = (next-sibling p) then next-sibling
-                  for next-sibling = (next-sibling next)
-                  while (and next (phrasing-context-p next))
-                  do (remove-child next)
-                  do (append-child p next)
-                  when (and (matches next "br")
-                            (matches (next-node (next-sibling next)) "br"))
-                    do (return)))))))
+            (let ((p (set-tag-name br "p")))
+              (loop for next = (next-sibling p) then next-sibling
+                    for next-sibling = (next-sibling next)
+                    while (and next (phrasing-context-p next))
+                    do (remove-child next)
+                    do (append-child p next)
+                    when (and (matches next "br")
+                              (matches (next-node (next-sibling next)) "br"))
+                      do (return))
+              (loop for last-child = (alexandria:lastcar (children p))
+                    while (and last-child (whitespace-p last-child))
+                    do (remove-child last-child))
+              (when (matches (parent p) "p")
+                (set-tag-name ))))))))
   (:documentation "Replaces 2 or more successive <br> elements with a single <p>.
 Whitespace between <br> elements are ignored. For example:
 
