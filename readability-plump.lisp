@@ -61,6 +61,7 @@
   (plump:replace-child child replacement))
 (defmethod set-tag-name ((element plump:element) tag-name)
   (serapeum:lret ((new (apply #'make-instance 'plump:element
+                              :attributes (plump:attributes element)
                               :parent (plump:parent element)
                               :tag-name tag-name
                               :children (plump:children element)
