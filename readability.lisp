@@ -5,26 +5,40 @@
 
 ;;; The API to implement on the side of a certain backend.
 
-(defgeneric qs (root css-selector)
-  (:method ((root t) css-selector)
+(defun element-p (maybe-element)
+  ;; The minimal set of methods to implement for a working API:
+  (and
+   (find-method #'qsa nil (list (class-of maybe-element)) nil)
+   (find-method #'name nil (list (class-of maybe-element)) nil)
+   (find-method #'attr nil (list (class-of maybe-element)) nil)
+   (find-method #'attrs nil (list (class-of maybe-element)) nil)
+   (find-method #'parent nil (list (class-of maybe-element)) nil)
+   (find-method #'children nil (list (class-of maybe-element)) nil)))
+
+(defgeneric text-node-p (node)
+  (:documentation "Whether the NODE is a text node."))
+;; CSS-SELECTOR is optional to exclude it from specializable methods.
+(defgeneric qs (root &optional css-selector)
+  (:method ((root t) &optional css-selector)
     (first (qsa root css-selector)))
   (:documentation "Select the first element in the ROOT matching the CSS-SELECTOR.
 
-Return a single element node."))
-(defgeneric qsa (root css-selector)
-  (:documentation "Select all the elements in the ROOT matching the CSS-SELECTOR.
+Return a single element node. If CSS-SELECTOR is NIL, return the root itself."))
+(defgeneric qsa (root &rest css-selectors)
+  (:documentation "Select all the elements in the ROOT matching the CSS-SELECTORS.
 
-Return a list."))
-(defgeneric matches (element css-selector)
-  (:method ((element t) css-selector)
-    (find element (qsa (parent element) css-selector)))
-  (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
+Return a list of matching elements. If CSS-SELECTORS list is empty, return all
+the sub-elements of the ROOT."))
+(defgeneric matches (element &rest css-selectors)
+  (:method ((element t) &rest css-selectors)
+    (find element (apply #'qsa (parent element) css-selectors)))
+  (:documentation "Whether the ELEMENT matches the CSS-SELECTORS."))
 (defgeneric name (element)
   (:documentation "Tag name of the element."))
-(defgeneric attr (element attribute)
+(defgeneric attr (element &optional attribute)
   (:documentation "Get an ATTRIBUTE value from the ELEMENT.
 
-If there's none, return NIL.
+If there's none or if ATTRIBUTE is NIL, return NIL.
 
 If the ELEMENT has no way to get attributes (which usually means it's
 not an HTML element), throw `no-attributes-error'.
@@ -40,7 +54,12 @@ attribute."))
   (:documentation "Get a parent of the ELEMENT or NIL."))
 (defgeneric children (element)
   (:documentation "Get a list of ELEMENT children.
-Only elements are listed."))
+Should have a setf-method."))
+(defgeneric children-elements (element)
+  (:method ((element t))
+    (remove-if-not #'element-p (children element)))
+  (:documentation "Get a list of ELEMENT children elements.
+Should have a setf-method."))
 (defgeneric next-sibling (element)
   (:documentation "Get next sibling for an ELEMENT or NIL if there's none.
 SHOULD return NIL is ELEMENT is NIL."))
@@ -70,8 +89,8 @@ Owes a terrible name to Readability._setTagName() method."))
 (defgeneric without-content-p (element)
   (:method ((element t))
     (and (zerop (length (string-trim serapeum:whitespace (inner-text element))))
-         (or (zerop (length (children element)))
-             (= (length (children element))
+         (or (zerop (length (children-elements element)))
+             (= (length (children-elements element))
                 (+ (length (qsa element "br"))
                    (length (qsa element "hr")))))))
   (:documentation "Whether the element is empty.
@@ -127,7 +146,7 @@ Readability._replaceNodeTags()."))
            (class (when preserved-classes
                     (format nil "~{~a~^ ~}" preserved-classes))))
       (setf (attr element "class") class)
-      (mapc #'clean-classes (children element))))
+      (mapc #'clean-classes (children-elements element))))
   (:documentation "Removes the class attribute from every element in the given ELEMENT subtree.
 
 Ignores classes those that match `*preserved-classes*'.
@@ -149,7 +168,7 @@ Readability._cleanClasses()."))
           ;; after scripts have been removed from the page.
           ((and (attr node "href")
                 (uiop:string-prefix-p "javascript:" (attr node "href")))
-           (if (zerop (length (children node)))
+           (if (zerop (length (children-elements node)))
                ;; If the link only contains simple text content, it can be converted to a text node.
                (replace-child node (make-text-node (inner-text node)))
                ;; If the link has multiple children, they should all be preserved.
@@ -186,12 +205,12 @@ Readability._fixRelativeUris()"))
       (cond
         ((without-content-p element)
          (remove-child element))
-        ((and (children element)
-              (serapeum:single (children element))
-              (matches "div, section" (first (children element))))
+        ((and (children-elements element)
+              (serapeum:single (children-elements element))
+              (matches "div, section" (first (children-elements element))))
          (replace-child
           element
-          (serapeum:lret ((child (first (children element))))
+          (serapeum:lret ((child (first (children-elements element))))
             (dolist (attr (attrs element))
               (setf (attr child attr) (attr element attr)))
             (simplify-nested-elements (first (children element))))))))
@@ -251,7 +270,7 @@ Readability._getArticleTitle()."))
 (defgeneric phrasing-context-p (node)
   (:method ((node t))
     (or
-     ;; TODO: check for being text node
+     (text-node-p node)
      (smember (name node) *phrasing-elements*)
      (and (smember (name node) '("a" "del" "ins"))
           ;; FIXME: node.childNodes
