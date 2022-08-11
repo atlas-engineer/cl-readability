@@ -148,11 +148,6 @@ Readability._removeNodes()."))
 
 Readability._replaceNodeTags()."))
 
-(defgeneric get-all-nodes-with-tag (node &rest tag-names)
-  (:method ((node t) &rest tag-names)
-    (alexandria:mappend (alexandria:curry #'qsa node) tag-names))
-  (:documentation "Readability._getAllNodesWithTag()."))
-
 (defgeneric clean-classes (element)
   (:method ((element t))
     (let* ((preserved-classes
@@ -178,7 +173,7 @@ Readability._cleanClasses()."))
                (quri:render-uri
                 (quri:merge-uris (quri:uri uri)
                                  (quri:uri *document-url*))))))
-      (dolist (node (get-all-nodes-with-tag element "a"))
+      (dolist (node (qsa element "a"))
         (cond
           ;; Remove links with javascript: URIs, since they won't work
           ;; after scripts have been removed from the page.
@@ -192,8 +187,7 @@ Readability._cleanClasses()."))
           ((attr node "href")
            (setf (attr node "href") (relative->absolute (attr node "href"))))
           (t nil)))
-      (dolist (node (get-all-nodes-with-tag
-                     element "img" "picture" "figure" "video" "audio" "source"))
+      (dolist (node (qsa element "img" "picture" "figure" "video" "audio" "source"))
         (when (attr node "src")
           (setf (attr node "src") (relative->absolute (attr node "src"))))
         (when (attr node "poster")
