@@ -151,15 +151,6 @@
                  (> 100 (length (string-trim serapeum:whitespace (plump:text element))) 0)))
         (string-trim serapeum:whitespace (plump:text element)))))
 
-;;; XXX: Readability._cleanStyles()
-(defmethod clean-styles ((element plump:element))
-  ;; Readability.REGEXPS.PRESENTATIONAL_ATTRIBUTES
-  (dolist (attr (list "align" "background" "bgcolor" "border" "cellpadding" "cellspacing" "frame"
-                      "hspace" "rules" "style" "valign" "vspace" "width" "height"))
-    (plump:remove-attribute element attr))
-  (loop for child across (plump:child-elements element)
-        do (clean-styles child)))
-
 ;;; XXX: Readability._getClassWeight()
 (defmethod get-class-weight ((element plump:element))
   ;; Readability.REGEXPS.positive

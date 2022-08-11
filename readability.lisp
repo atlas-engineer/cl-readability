@@ -346,6 +346,20 @@ Readability._replaceBrs()."))
   (:documentation "Prepare the HTML document for readability to scrape it.
 This includes things like stripping javascript, CSS, and handling terrible markup."))
 
+(defgeneric clean-styles (element)
+  (:method ((element t))
+    (unless (or (null element)
+                (matches element "svg"))
+      (dolist (attr *presentation-attributes*)
+        (setf (attr element attr) nil))
+      (when (smember (name element) *deprecated-size-attribute-names*)
+        (setf (attr element "width") nil
+              (attr element "height") nil))
+      (mapc #'clean-styles (children-elements element))))
+  (:documentation "
+
+Readability._cleanStyles()."))
+
 ;; The toplevel API.
 
 (export-always 'is-readerable)
