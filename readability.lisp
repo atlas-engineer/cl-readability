@@ -364,16 +364,19 @@ This includes things like stripping javascript, CSS, and handling terrible marku
 
 Readability._cleanStyles()."))
 
+(defun video-embed-p (element)
+  (or (and (matches element "object, embed, iframe")
+           (some (lambda (val)
+                   (cl-ppcre:scan *videos-regex* val))
+                 (mapcar (alexandria:curry #'attr element) (attrs element))))
+      (and (matches element "object")
+           (cl-ppcre:scan *videos-regex* (inner-html element)))))
+
 (defgeneric clean (element &rest tags)
   (:method ((element t) &rest tags)
     (dolist (tag tags)
       (dolist (e (qsa element tag))
-        (unless (or (and (matches e "object, embed, iframe")
-                         (some (lambda (val)
-                                 (cl-ppcre:scan *videos-regex* val))
-                               (mapcar (alexandria:curry #'attr e) (attrs e))))
-                    (and (matches e "object")
-                         (cl-ppcre:scan *videos-regex* (inner-html e))))
+        (unless (video-embed-p e)
           (remove-child e)))))
   (:documentation "Clean an ELEMENT of all elements of type TAG.
 (Unless it's a youtube/vimeo video. People love movies.)
