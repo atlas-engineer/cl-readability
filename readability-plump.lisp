@@ -49,6 +49,13 @@
 ;; To conform to element-p.
 (defmethod inner-text ((node plump:element))
   (plump:text node))
+(defmethod inner-html ((node t))
+  "")
+(defmethod inner-html ((node plump:nesting-node))
+  (serapeum:mapconcat
+   (alexandria:rcurry #'plump:serialize nil)
+   (children node)
+   ""))
 (defmethod append-child ((parent plump:nesting-node) (child plump:child-node))
   (plump:append-child parent child))
 ;; To conform to element-p.

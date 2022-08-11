@@ -53,6 +53,8 @@ attribute."))
   (:documentation "Get a list of attribute names."))
 (defgeneric inner-text (element)
   (:documentation "Return the inner text of ELEMENT as a plain non-HTML string."))
+(defgeneric inner-html (element)
+  (:documentation "Return the inner HTML of ELEMENT as a plain string."))
 (defgeneric parent (element)
   (:documentation "Get a parent of the ELEMENT or NIL."))
 (defgeneric children (element)
@@ -359,6 +361,56 @@ This includes things like stripping javascript, CSS, and handling terrible marku
   (:documentation "
 
 Readability._cleanStyles()."))
+
+(defgeneric clean (element &rest tags)
+  (:method ((element t) &rest tags)
+    (dolist (tag tags)
+      (dolist (e (qsa element tag))
+        (unless (or (and (matches e "object, embed, iframe")
+                         (some (lambda (val)
+                                 (cl-ppcre:scan *videos-regex* val))
+                               (mapcar (alexandria:curry #'attr e) (attrs e))))
+                    (and (matches e "object")
+                         (cl-ppcre:scan *videos-regex* (inner-html e))))
+          (remove-child e)))))
+  (:documentation "Clean an ELEMENT of all elements of type TAG.
+(Unless it's a youtube/vimeo video. People love movies.)
+
+Readability._clean()."))
+
+(defgeneric prepare-article (element)
+  (:method ((element t))
+    (clean-styles element)
+    ;; TODO:
+    ;; this._markDataTables(articleContent);
+    ;; this._fixLazyImages(articleContent);
+    ;; this._cleanConditionally(articleContent, "form");
+    ;; this._cleanConditionally(articleContent, "fieldset");
+    (clean element "object")
+    (clean element "embed")
+    (clean element "footer")
+    (clean element "link")
+    (clean element "aside")
+    ;; TODO:
+    ;;     // Clean out elements with little content that have "share" in their id/class combinations from final top candidates,
+    ;; // which means we don't remove the top candidates even they have "share".
+    ;; var shareElementThreshold = this.DEFAULT_CHAR_THRESHOLD;
+    ;; this._forEachNode(articleContent.children, function (topCandidate) {
+    ;;   this._cleanMatchedNodes(topCandidate, function (node, matchString) {
+    ;;     return this.REGEXPS.shareElements.test(matchString) && node.textContent.length < shareElementThreshold;
+    ;;   });
+    ;; });
+    (clean element "iframe")
+    (clean element "input")
+    (clean element "textarea")
+    (clean element "select")
+    (clean element "button")
+    ;; All the rest of it
+    )
+  (:documentation "Prepare the article ELEMENT for display.
+Clean out any inline styles, iframes, forms, strip extraneous <p> tags, etc.
+
+Readability._prepArticle()."))
 
 ;; The toplevel API.
 
