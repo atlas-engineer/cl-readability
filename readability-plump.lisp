@@ -234,10 +234,6 @@
 (defmethod has-block-children-p ((node plump:node))
   nil)
 
-(defmethod get-inner-text ((node plump:node))
-  ;; TODO: normalize spaces
-  (serapeum:trim-whitespace (plump:text node)))
-
 ;; XXX: Readability._getLinkDensity()
 (defmethod link-density ((element plump:element))
   (/ (reduce (lambda (link-length link)
