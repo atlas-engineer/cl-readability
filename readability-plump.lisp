@@ -318,7 +318,7 @@
                           (plump:make-element node "p"))))
                 (plump:children node)
                 :initial-value (plump:make-element node "p"))
-          when (single-tag-inside-p node "p")
+          when (and (parent node) (single-tag-inside-p node "p"))
             do (plump:replace-child node (elt (clss:select "p" node) 0))
                ;; TODO: L1005-1319
           when (scoreable-p node)
