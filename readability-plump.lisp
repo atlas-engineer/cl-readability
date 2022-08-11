@@ -40,6 +40,9 @@
   (plump:set-attribute element attribute (princ-to-string value)))
 (defmethod attrs ((element plump:element))
   (alexandria:hash-table-keys (plump:attributes element)))
+(defmethod matches ((element t) &rest selectors)
+  (declare (ignore selectors))
+  nil)
 (defmethod matches ((element plump:element) &rest selectors)
   (some (alexandria:rcurry #'clss:node-matches-p element) selectors))
 (defmethod inner-text ((node plump:node))
@@ -158,23 +161,6 @@
                  (> 100 (length (string-trim serapeum:whitespace (plump:text element))) 0)))
         (string-trim serapeum:whitespace (plump:text element)))))
 
-;;; XXX: Readability._getClassWeight()
-(defmethod get-class-weight ((element plump:element))
-  ;; Readability.REGEXPS.positive
-  (let ((positive "article|body|content|entry|hentry|h-entry|main|page|pagination|post|text|blog|story")
-        ;; Readability.REGEXPS.positive
-        (negative "-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|tool|widget"))
-    (flet ((bool-mul (boolean &optional (multiplier 1))
-             (if boolean multiplier 0)))
-      (+ (bool-mul
-          (unless (uiop:emptyp (plump:get-attribute element "class"))
-            (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "class")) 25)
-               (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "class")) -25))))
-         (bool-mul
-          (unless (uiop:emptyp (plump:get-attribute element "id"))
-            (+ (bool-mul (cl-ppcre:scan positive (plump:get-attribute element "id")) 25)
-               (bool-mul (cl-ppcre:scan negative (plump:get-attribute element "id")) -25))))))))
-
 (defmethod recursive-parents ((node plump:child-node) &key (max-depth 3))
   (labels ((parents (node depth)
              (when (and (plusp depth)
@@ -234,16 +220,6 @@
 (defmethod has-block-children-p ((node plump:node))
   nil)
 
-;; XXX: Readability._getLinkDensity()
-(defmethod link-density ((element plump:element))
-  (/ (reduce (lambda (link-length link)
-               (+ link-length
-                  (let* ((href (plump:get-attribute link "href"))
-                         (hash-p (when href (eql #\# (elt href 0)))))
-                    (* (length (get-inner-text link)) (if hash-p 0.3 1)))))
-             (clss:select "a" element) :initial-value 0)
-     (length (get-inner-text element))))
-
 (defvar *score-table* (make-hash-table)
   "The table for the already computed nodes score to cache the existing results.")
 
@@ -263,7 +239,7 @@
           (comma-score (1+ (count #\, inner-text)))
           (length-score (min (round (/ (length inner-text) 100)) 3))
           (class-score (get-class-weight element))
-          (link-density (link-density element))
+          (link-density (get-link-density element))
           (progeny-score (labels ((calc (node &optional (level 0))
                                     (if (scoreable-p node)
                                         (+ (/ (calculate-score node)

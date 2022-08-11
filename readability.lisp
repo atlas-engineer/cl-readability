@@ -34,7 +34,8 @@ the sub-elements of the ROOT."))
   (:method ((element t) &rest css-selectors)
     (when element
       (find element (apply #'qsa (parent element) css-selectors))))
-  (:documentation "Whether the ELEMENT matches the CSS-SELECTORS."))
+  (:documentation "Whether the ELEMENT matches the CSS-SELECTORS.
+If element is not `element-p', return NIL."))
 (defgeneric name (element)
   (:documentation "Tag name of the element.
 Should return NIL is there's no name or the element is malformed."))
@@ -383,14 +384,128 @@ Readability._cleanStyles()."))
 
 Readability._clean()."))
 
+;; TODO: Refactor?
+(defgeneric has-ancestor-tag (node tag-name &key max-depth filter)
+  (:method ((node t) tag-name &key (max-depth 3) filter)
+    (loop for parent = (parent node) then (parent parent)
+          for depth from 1
+          until (or (null parent)
+                    (and max-depth (> depth max-depth)))
+          when (and (string-equal (name parent) tag-name)
+                    (or (null filter) (funcall filter parent)))
+            do (return t)
+          finally (return nil)))
+  (:documentation "Check if a given NODE has one of its ancestor TAG-NAME matching the provided one.
+
+Readability._hasAncestorTag()."))
+
+(defgeneric get-link-density (element)
+  (:method ((element t))
+    (/ (reduce (lambda (link-length link)
+                 (+ link-length
+                    (let* ((href (attr link "href"))
+                           (hash-p (when href (eql #\# (elt href 0)))))
+                      (* (length (get-inner-text link)) (if hash-p 0.3 1)))))
+               (qsa element "a") :initial-value 0)
+       (length (get-inner-text element))))
+  (:documentation "Get the density of links as a percentage of the content.
+This is the amount of text that is inside a link divided by the total
+text in the node.
+
+Readability._getLinkDensity()"))
+
+(defgeneric get-class-weight (element)
+  (:method ((element t))
+    (if (not *weight-classes*)
+        0
+        (flet ((bool-mul (boolean &optional (multiplier 1))
+                 (if boolean multiplier 0)))
+          (+ (bool-mul (not (uiop:emptyp (attr element "class")))
+                       (+ (bool-mul (test *positive-regex* (attr element "class")) 25)
+                          (bool-mul (test *negative-regex* (attr element "class")) -25)))
+             (bool-mul (not (uiop:emptyp (attr element "id")))
+                       (+ (bool-mul (test *positive-regex* (attr element "id")) 25)
+                          (bool-mul (test *negative-regex* (attr element "id")) -25)))))))
+  (:documentation "Get an elements class/id weight.
+Uses regular expressions to tell if this element looks good or bad.
+
+Readability._getClassWeight()"))
+
+(defgeneric clean-conditionally (element &rest tags)
+  (:method ((element t) &rest tags)
+    (when *clean-conditionally*
+      (dolist (tag tags)
+        (dolist (node (reverse (qsa element tag)))
+          (let* ((is-list (or (smember tag '("ul" "ol"))
+                              (> (/ (reduce #'+ (mapcar
+                                                 (alexandria:compose #'length #'inner-text)
+                                                 (qsa node "ul" "ol")))
+                                    (length (inner-text node)))
+                                 0.9)))
+                 (img (length (qsa node "img")))
+                 (p (length (qsa node "p")))
+                 (li (- (length (qsa node "li")) 100))
+                 (input (length (qsa node "input")))
+                 (content-length (length (get-inner-text node)))
+                 (heading-density (if (zerop content-length)
+                                      0
+                                      (/ (reduce
+                                          #'+ (mapcar
+                                               (alexandria:compose #'length #'get-inner-text)
+                                               (qsa node "h1,h2,h3,h4,h5,h6")))
+                                         content-length)))
+                 (embeds (qsa node "object, embed, iframe"))
+                 (embed-count (count-if-not #'video-embed-p embeds))
+                 (video-embeds-p (some #'video-embed-p embeds))
+                 (link-density (get-link-density node))
+                 (weight (get-class-weight node))
+                 (have-to-remove (when (< (count #\, (inner-text node)) 10)
+                                   (or
+                                    (and (> img 1) (< (/ p img) 1/2)
+                                         (has-ancestor-tag node "figure"))
+                                    (and (not is-list) (> li p))
+                                    (> input (floor (/ p 3)))
+                                    (and (not is-list)
+                                         (< heading-density 0.9)
+                                         (< content-length 25)
+                                         (or (zerop img) (> img 2))
+                                         (has-ancestor-tag node "figure"))
+                                    (and (not is-list)
+                                         (< weight 25)
+                                         (> link-density 0.2))
+                                    (and (>= weight 25)
+                                         (> link-density 0.5))
+                                    (or (> embed-count 1)
+                                        (and (= embed-count 1)
+                                             (< content-length 75)))))))
+            ;; TODO:
+            ;; var isDataTable = function(t) {
+            ;;   return t._readabilityDataTable;
+            ;; };
+            ;; if (tag === "table" && isDataTable(node)) {
+            ;;   return false;
+            ;; }
+            ;; if (this._hasAncestorTag(node, "table", -1, isDataTable)) {
+            ;;   return false;
+            ;; }
+            (unless (or (has-ancestor-tag node "code")
+                        (not (minusp weight))
+                        video-embeds-p
+                        (not have-to-remove))
+              (remove-child node)))))))
+  (:documentation "Clean an ELEMENT of all tags of types TAGS if they look fishy.
+\"Fishy\" is an algorithm based on content length, class names, link
+density, number of images & embeds, etc.
+
+Readability._cleanConditionally()."))
+
 (defgeneric prepare-article (element)
   (:method ((element t))
     (clean-styles element)
     ;; TODO:
     ;; this._markDataTables(articleContent);
     ;; this._fixLazyImages(articleContent);
-    ;; this._cleanConditionally(articleContent, "form");
-    ;; this._cleanConditionally(articleContent, "fieldset");
+    (clean-conditionally element "form" "fieldset")
     (clean element "object" "embed" "footer" "link" "aside")
     ;; TODO:
     ;;     // Clean out elements with little content that have "share" in their id/class combinations from final top candidates,
@@ -402,7 +517,29 @@ Readability._clean()."))
     ;;   });
     ;; });
     (clean element "iframe" "input" "textarea" "select" "button")
-    ;; All the rest of it
+    ;; this._cleanHeaders(articleContent);
+    (clean-conditionally element "table" "ul" "div")
+    (dolist (h1 (qsa element "h1"))
+      (set-tag-name h1 "h2"))
+    (dolist (p (qsa element "p"))
+      (when (and (zerop (length (qsa p "img, embed, object, iframe")))
+                 (serapeum:blankp (inner-text p)))
+        (remove-child p)))
+    (dolist (br (qsa element "br"))
+      (unless (matches (next-node (next-sibling br)) "p")
+        (remove-child br)))
+    ;;     // Remove single-cell tables
+    ;; this._forEachNode(this._getAllNodesWithTag(articleContent, ["table"]), function(table) {
+    ;;   var tbody = this._hasSingleTagInsideElement(table, "TBODY") ? table.firstElementChild : table;
+    ;;   if (this._hasSingleTagInsideElement(tbody, "TR")) {
+    ;;     var row = tbody.firstElementChild;
+    ;;     if (this._hasSingleTagInsideElement(row, "TD")) {
+    ;;       var cell = row.firstElementChild;
+    ;;       cell = this._setNodeTag(cell, this._everyNode(cell.childNodes, this._isPhrasingContent) ? "P" : "DIV");
+    ;;       table.parentNode.replaceChild(cell, table);
+    ;;     }
+    ;;   }
+    ;; });
     )
   (:documentation "Prepare the article ELEMENT for display.
 Clean out any inline styles, iframes, forms, strip extraneous <p> tags, etc.
