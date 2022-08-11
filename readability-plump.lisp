@@ -170,14 +170,6 @@
                (cons node (parents (plump:parent node) (1+ depth))))))
     (parents node 0)))
 
-(defmethod has-ancestor-tag ((node plump:child-node) (tag-name string)
-                             &key (max-depth 3) filter-fn)
-  (some (lambda (ancestor)
-          (and (string-equal tag-name (plump:tag-name ancestor))
-               (or (not filter-fn)
-                   (funcall filter-fn ancestor))))
-        (recursive-parents node :max-depth max-depth)))
-
 (defmethod phrasing-content-p ((node plump:element))
   (or (smember (plump:tag-name node) *phrasing-elements*)
       (and (smember (plump:tag-name node) '("a" "del" "ins"))
