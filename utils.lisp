@@ -14,3 +14,6 @@
   ;; FIXME: Use regexps? Split by other markers? We can do better than
   ;; this, better than Readability.js!
   (length (uiop:split-string string :separator serapeum:whitespace)))
+
+(defun test (regex string)
+  (ppcre:scan regex string))
