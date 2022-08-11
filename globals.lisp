@@ -39,7 +39,9 @@
   "The of classes to preserve on HTML elements.
 If nil, preserve nothing.
 If t, preserve everything.
-If a list of strings, preserve this exact list of classes.")
+If a list of strings, preserve this exact list of classes.
+
+Readability.CLASSES_TO_PRESERVE.")
 
 (defvar *phrasing-elements*
   (list
@@ -55,15 +57,30 @@ If a list of strings, preserve this exact list of classes.")
 
 (defvar *max-elements* nil
   "Max number of nodes supported by the parser.
-Defaults to nil (no limit).")
+Defaults to nil (no limit).
+
+Readability.DEFAULT_MAX_ELEMS_TO_PARSE.")
 
 (defvar *max-top-candidates* 5
   "The number of top candidates to consider when analysing how tight
-  the competition is among candidates.")
+  the competition is among candidates.
+
+Readability.DEFAULT_N_TOP_CANDIDATES")
 
 (defvar *tags-to-score*
   '("SECTION" "H2" "H3" "H4" "H5" "H6" "P" "TD" "PRE")
   "Element tags to score by default.")
 
 (defvar *char-threshold* 500
-  "The default number of chars an article must have in order to return a result.")
+  "The default number of chars an article must have in order to return a result.
+
+Readability.DEFAULT_CHAR_THRESHOLD.")
+
+(defvar *strip-unlikelys* nil
+  "Readability.FLAG_STRIP_UNLIKELYS.")
+
+(defvar *weight-classes* nil
+  "Readability.FLAG_WEIGHT-CLASSES.")
+
+(defvar *clean-conditionally* nil
+  "Readability.FLAG_CLEAN_CONDITIONALLY.")
