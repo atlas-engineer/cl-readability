@@ -3,47 +3,50 @@
 
 (in-package #:readability)
 
-(defvar *unlikely-candidate-regex*
-  "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
+(macrolet ((defregex (name string)
+             `(defvar ,name (ppcre:create-scanner ,string))))
 
-(defvar *maybe-candidate-regex*
-  "and|article|body|column|content|main|shadow")
+  (defregex *unlikely-candidate-regex*
+    "-ad-|ai2html|banner|breadcrumbs|combx|comment|community|cover-wrap|disqus|extra|footer|gdpr|header|legends|menu|related|remark|replies|rss|shoutbox|sidebar|skyscraper|social|sponsor|supplemental|ad-break|agegate|pagination|pager|popup|yom-remote")
 
-(defvar *positive-regex*
-  "article|body|content|entry|hentry|h-entry|main|page|pagination|post|text|blog|story")
+  (defregex *maybe-candidate-regex*
+    "and|article|body|column|content|main|shadow")
 
-(defvar *negative-regex*
-  "-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|tool|widget")
+  (defregex *positive-regex*
+    "article|body|content|entry|hentry|h-entry|main|page|pagination|post|text|blog|story")
 
-(defvar *extraneous-regex*
-  "print|archive|comment|discuss|e[\\-]?mail|share|reply|all|login|sign|single|utility")
+  (defregex *negative-regex*
+    "-ad-|hidden|^hid$| hid$| hid |^hid |banner|combx|comment|com-|contact|foot|footer|footnote|gdpr|masthead|media|meta|outbrain|promo|related|scroll|share|shoutbox|sidebar|skyscraper|sponsor|shopping|tags|tool|widget")
 
-(defvar *byline-regex*
-  "byline|author|dateline|writtenby|p-author")
+  (defregex *extraneous-regex*
+    "print|archive|comment|discuss|e[\\-]?mail|share|reply|all|login|sign|single|utility")
 
-(defvar *normalize-regex* "\\s{2,}")
+  (defregex *byline-regex*
+    "byline|author|dateline|writtenby|p-author")
 
-;; TODO: replaceFonts
+  (defregex *normalize-regex* "\\s{2,}")
 
-(defvar *videos-regex*
-  "\\/\\/(www\\.)?((dailymotion|youtube|youtube-nocookie|player\\.vimeo|v\\.qq)\\.com|(archive|upload\\.wikimedia)\\.org|player\\.twitch\\.tv)")
+  ;; TODO: replaceFonts
 
-(defvar *share-element-regex*
-  "(\\b|_)(share|sharedaddy)(\\b|_)")
+  (defregex *videos-regex*
+    "\\/\\/(www\\.)?((dailymotion|youtube|youtube-nocookie|player\\.vimeo|v\\.qq)\\.com|(archive|upload\\.wikimedia)\\.org|player\\.twitch\\.tv)")
 
-(defvar *next-link-regex*
-  "(next|weiter|continue|>([^\\|]|$)|»([^\\|]|$))")
+  (defregex *share-element-regex*
+    "(\\b|_)(share|sharedaddy)(\\b|_)")
 
-(defvar *prev-link-regex*
-  "(prev|earl|old|new|<|«)")
+  (defregex *next-link-regex*
+    "(next|weiter|continue|>([^\\|]|$)|»([^\\|]|$))")
 
-;; TODO: tokenize, whitespace, hasContent, hashUrl
+  (defregex *prev-link-regex*
+    "(prev|earl|old|new|<|«)")
 
-(defvar *srcset-url-regex*
-  "(\S+)(\s+[\d.]+[xw])?(\s*(?:,|$))")
+  ;; TODO: tokenize, whitespace, hasContent, hashUrl
 
-(defvar *base64-data-url-regex*
-  "^data:\s*([^\s;,]+)\s*;\s*base64\s*,")
+  (defregex *srcset-url-regex*
+    "(\S+)(\s+[\d.]+[xw])?(\s*(?:,|$))")
 
-(defvar *json-ld-article-types*
-  "^Article|AdvertiserContentArticle|NewsArticle|AnalysisNewsArticle|AskPublicNewsArticle|BackgroundNewsArticle|OpinionNewsArticle|ReportageNewsArticle|ReviewNewsArticle|Report|SatiricalArticle|ScholarlyArticle|MedicalScholarlyArticle|SocialMediaPosting|BlogPosting|LiveBlogPosting|DiscussionForumPosting|TechArticle|APIReference$")
+  (defregex *base64-data-url-regex*
+    "^data:\s*([^\s;,]+)\s*;\s*base64\s*,")
+
+  (defregex *json-ld-article-types*
+    "^Article|AdvertiserContentArticle|NewsArticle|AnalysisNewsArticle|AskPublicNewsArticle|BackgroundNewsArticle|OpinionNewsArticle|ReportageNewsArticle|ReviewNewsArticle|Report|SatiricalArticle|ScholarlyArticle|MedicalScholarlyArticle|SocialMediaPosting|BlogPosting|LiveBlogPosting|DiscussionForumPosting|TechArticle|APIReference$"))
