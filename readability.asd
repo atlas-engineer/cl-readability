@@ -11,6 +11,7 @@
   :depends-on (cl-ppcre serapeum alexandria quri)
   :components ((:file "package")
                (:file "globals")
+               (:file "regex")
                (:file "conditions")
                (:file "utils")
                (:file "readability")))
