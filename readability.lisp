@@ -6,6 +6,8 @@
 ;;; The API to implement on the side of a certain backend.
 
 (defgeneric qs (root css-selector)
+  (:method ((root t) css-selector)
+    (first (qsa root css-selector)))
   (:documentation "Select the first element in the ROOT matching the CSS-SELECTOR.
 
 Return a single element node."))
@@ -14,6 +16,8 @@ Return a single element node."))
 
 Return a list."))
 (defgeneric matches (element css-selector)
+  (:method ((element t) css-selector)
+    (find element (qsa (parent element) css-selector)))
   (:documentation "Whether the ELEMENT matches the CSS-SELECTOR."))
 (defgeneric name (element)
   (:documentation "Tag name of the element."))
