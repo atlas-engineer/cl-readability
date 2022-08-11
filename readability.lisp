@@ -380,11 +380,7 @@ Readability._clean()."))
     ;; this._fixLazyImages(articleContent);
     ;; this._cleanConditionally(articleContent, "form");
     ;; this._cleanConditionally(articleContent, "fieldset");
-    (clean element "object")
-    (clean element "embed")
-    (clean element "footer")
-    (clean element "link")
-    (clean element "aside")
+    (clean element "object" "embed" "footer" "link" "aside")
     ;; TODO:
     ;;     // Clean out elements with little content that have "share" in their id/class combinations from final top candidates,
     ;; // which means we don't remove the top candidates even they have "share".
@@ -394,11 +390,7 @@ Readability._clean()."))
     ;;     return this.REGEXPS.shareElements.test(matchString) && node.textContent.length < shareElementThreshold;
     ;;   });
     ;; });
-    (clean element "iframe")
-    (clean element "input")
-    (clean element "textarea")
-    (clean element "select")
-    (clean element "button")
+    (clean element "iframe" "input" "textarea" "select" "button")
     ;; All the rest of it
     )
   (:documentation "Prepare the article ELEMENT for display.
