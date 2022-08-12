@@ -578,7 +578,7 @@ Readability._prepArticle()."))
             when (or (smember (attr image attr) '("src" "srcset" "data-src" "data-srcset"))
                      (test *image-regex* (attr image attr)))
               do (return-from attr-checking)
-            finally (plump:remove-child image)))
+            finally (remove-child image)))
     (dolist (noscript (qsa document "noscript"))
       (labels ((single-image-p (node)
                  "Check if NODE is image.
