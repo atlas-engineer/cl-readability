@@ -346,3 +346,7 @@ Full copy means recursively descending to the children of the NODE too."))
             ;; - site name
             ))
   )
+
+(defmethod parse ((document plump:nesting-node) url)
+  (let ((copy (copy-node document)))
+    (nparse copy url)))
