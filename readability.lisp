@@ -62,6 +62,9 @@ attribute."))
           content)))
   (:documentation "Get the inner text of a node.
 This also strips out any excess whitespace to be found."))
+(defun text-length (element)
+  "Small helper to get the content length of ELEMENT."
+  (length (get-inner-text element)))
 (defgeneric inner-html (element)
   (:documentation "Return the inner HTML of ELEMENT as a plain string."))
 (defgeneric parent (element)
@@ -405,9 +408,9 @@ Readability._hasAncestorTag()."))
                  (+ link-length
                     (let* ((href (attr link "href"))
                            (hash-p (when href (eql #\# (elt href 0)))))
-                      (* (length (get-inner-text link)) (if hash-p 0.3 1)))))
+                      (* (text-length link) (if hash-p 0.3 1)))))
                (qsa element "a") :initial-value 0)
-       (length (get-inner-text element))))
+       (text-length element)))
   (:documentation "Get the density of links as a percentage of the content.
 This is the amount of text that is inside a link divided by the total
 text in the node.
@@ -446,13 +449,11 @@ Readability._getClassWeight()"))
                  (p (length (qsa node "p")))
                  (li (- (length (qsa node "li")) 100))
                  (input (length (qsa node "input")))
-                 (content-length (length (get-inner-text node)))
+                 (content-length (text-length node))
                  (heading-density (if (zerop content-length)
                                       0
                                       (/ (reduce
-                                          #'+ (mapcar
-                                               (alexandria:compose #'length #'get-inner-text)
-                                               (qsa node "h1,h2,h3,h4,h5,h6")))
+                                          #'+ (mapcar #'textlength (qsa node "h1,h2,h3,h4,h5,h6")))
                                          content-length)))
                  (embeds (qsa node "object, embed, iframe"))
                  (embed-count (count-if-not #'video-embed-p embeds))
