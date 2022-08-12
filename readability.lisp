@@ -561,6 +561,56 @@ Clean out any inline styles, iframes, forms, strip extraneous <p> tags, etc.
 
 Readability._prepArticle()."))
 
+(defgeneric unwrap-noscript-images (document)
+  (:method ((document t))
+    (dolist (image (qsa document "img"))
+      (loop named attr-checking
+            for attr in (attrs image)
+            when (or (smember (attr image attr) '("src" "srcset" "data-src" "data-srcset"))
+                     (test *image-regex* (attr image attr)))
+              do (return-from attr-checking)
+            finally (plump:remove-child image)))
+    (dolist (noscript (qsa document "noscript"))
+      (labels ((single-image-p (node)
+                 "Check if NODE is image.
+Or if NODE contains exactly only one image whether as a direct child
+or as its descendants.
+
+Readability._isSingleImage()"
+                 (or (matches node "img")
+                     (and (= 1 (length (children node)))
+                          (not (uiop:emptyp (get-inner-text node)))
+                          (single-image-p (first (children node)))))))
+        (serapeum:and-let* ((_ (single-image-p noscript))
+                            (family (children (parent noscript)))
+                            (pos (position noscript family))
+                            (prev (unless (zerop pos)
+                                    (elt family (1- pos))))
+                            (_ (single-image-p prev))
+                            (prev-img (if (matches prev "img")
+                                          prev
+                                          (qs prev "img")))
+                            (new-img (qs noscript "img")))
+          (loop for attr in (attrs prev-img)
+                for val = (attr prev-img attr)
+                when (and (not (uiop:emptyp val))
+                          (or (smember attr '("src" "srcset"))
+                              (test *image-regex* val))
+                          (not (string-equal val (attr new-img attr))))
+                  do (setf (attr new-img
+                                 (uiop:strcat (when (attr new-img attr) "data-old-") attr))
+                           val)
+                finally (progn
+                          (replace-child prev (first (children noscript)))
+                          (remove-child noscript)))))))
+  (:documentation "Find all <noscript> that are located after <img> nodes, and which contain only one <img> element.
+
+Replace the first image with the image from inside the <noscript> tag,
+and remove the <noscript> tag. This improves the quality of the images
+we use on some sites (e.g. Medium).
+
+Readability._unwrapNoscriptImages()."))
+
 ;; The toplevel API.
 
 (export-always 'is-readerable)

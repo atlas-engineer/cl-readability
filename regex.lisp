@@ -31,6 +31,9 @@
   (defregex *videos-regex*
     "\\/\\/(www\\.)?((dailymotion|youtube|youtube-nocookie|player\\.vimeo|v\\.qq)\\.com|(archive|upload\\.wikimedia)\\.org|player\\.twitch\\.tv)")
 
+  (defregex *image-regex*
+    "\\.(jpg|jpeg|png|webp)")
+
   (defregex *share-element-regex*
     "(\\b|_)(share|sharedaddy)(\\b|_)")
 

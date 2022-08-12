@@ -124,19 +124,6 @@
   (let ((*visibility-checker* #'node-visible-p))
     (call-next-method)))
 
-;;; XXX Readability._unwrapNoscriptImages()
-(defmethod unwrap-noscript-images ((document plump:nesting-node))
-  (loop for image across (clss:select "img" document)
-        do (loop named attr-checking
-                 for attr being the hash-key of (plump:attributes image)
-                   using (hash-value attr-value)
-                 when (or (smember attr '("src" "srcset" "data-src" "data-srcset"))
-                          (cl-ppcre:scan "\\.(jpg|jpeg|png|webp)" attr-value))
-                   do (return-from attr-checking)
-                 finally (plump:remove-child image)))
-  ;; TODO: noscript cleaning.
-  )
-
 ;;; XXX: Readability._getNextNode()
 (defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
   (declare (ignore ignore-self-and-kids))
@@ -302,7 +289,7 @@
                          (len (length (clss:select "*" document)))
                          (long (> len max)))
     (signal 'too-many-elements-error :number-of-elements len))
-  ;; TODO: this._unwrapNoscriptImages(this._doc);
+  (unwrap-noscript-images document)
   ;; TODO: var jsonLd = this._disableJSONLD ? {} : this._getJSONLD(this._doc);
   ;; XXX: this._removeScripts(this._doc);
   (loop for node across (clss:select "script,noscript" document)
