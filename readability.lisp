@@ -402,7 +402,7 @@ Readability._clean()."))
 
 Readability._hasAncestorTag()."))
 
-(defgeneric get-link-density (element)
+(defgeneric link-density (element)
   (:method ((element t))
     (/ (reduce (lambda (link-length link)
                  (+ link-length
@@ -417,7 +417,7 @@ text in the node.
 
 Readability._getLinkDensity()"))
 
-(defgeneric get-class-weight (element)
+(defgeneric class-weight (element)
   (:method ((element t))
     (if (not *weight-classes*)
         0
@@ -458,8 +458,8 @@ Readability._getClassWeight()"))
                  (embeds (qsa node "object, embed, iframe"))
                  (embed-count (count-if-not #'video-embed-p embeds))
                  (video-embeds-p (some #'video-embed-p embeds))
-                 (link-density (get-link-density node))
-                 (weight (get-class-weight node))
+                 (link-density (link-density node))
+                 (weight (class-weight node))
                  (have-to-remove (when (< (count #\, (inner-text node)) 10)
                                    (or
                                     (and (> img 1) (< (/ p img) 1/2)
