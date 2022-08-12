@@ -269,6 +269,47 @@
 (defmethod post-process-content :after ((node plump:node))
   (remove-non-elements node))
 
+(defgeneric copy-node (node &optional parent)
+  (:documentation "Produce a full copy of NODE as belonging to the PARENT node.
+Full copy means recursively descending to the children of the NODE too."))
+
+(defmethod copy-node ((element plump:root) &optional parent)
+  (declare (ignore parent))
+  (serapeum:lret ((copy (plump:make-root)))
+    (map nil (lambda (c) (plump:append-child copy (copy-node c copy))) (plump:children element))))
+
+(defmethod copy-node ((element plump:element) &optional parent)
+  (serapeum:lret ((copy (make-instance 'plump:element
+                                       :parent parent
+                                       :attributes (alexandria:copy-hash-table (plump:attributes element))
+                                       :tag-name (plump:tag-name element))))
+    (map nil (lambda (c) (plump:append-child copy (copy-node c copy))) (plump:children element))))
+
+(defmethod copy-node ((element plump:text-node) &optional parent)
+  (make-instance 'plump:text-node
+                 :parent parent
+                 :text (plump:text element)))
+
+(defmethod copy-node ((element plump:comment) &optional parent)
+  (make-instance 'plump:comment
+                 :parent parent
+                 :text (plump:text element)))
+
+(defmethod copy-node ((element plump:xml-header) &optional parent)
+  (make-instance 'plump:xml-header
+                 :parent parent
+                 :attributes (alexandria:copy-hash-table (plump:attributes element))))
+
+(defmethod copy-node ((element plump:cdata) &optional parent)
+  (make-instance 'plump:cdata
+                 :parent parent
+                 :text (plump:text element)))
+
+(defmethod copy-node ((element plump:doctype) &optional parent)
+  (make-instance 'plump:doctype
+                 :parent parent
+                 :doctype (plump:doctype element)))
+
 (defmethod nparse ((document plump:nesting-node) url)
   (alexandria:when-let* ((max *max-elements*)
                          (len (length (clss:select "*" document)))
