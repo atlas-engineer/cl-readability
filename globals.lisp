@@ -76,11 +76,11 @@ Readability.DEFAULT_N_TOP_CANDIDATES")
 
 Readability.DEFAULT_CHAR_THRESHOLD.")
 
-(defvar *strip-unlikelys* nil
+(defvar *strip-unlikelys* t
   "Readability.FLAG_STRIP_UNLIKELYS.")
 
-(defvar *weight-classes* nil
+(defvar *weight-classes* t
   "Readability.FLAG_WEIGHT-CLASSES.")
 
-(defvar *clean-conditionally* nil
+(defvar *clean-conditionally* t
   "Readability.FLAG_CLEAN_CONDITIONALLY.")
