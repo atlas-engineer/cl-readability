@@ -47,9 +47,12 @@ If there's none or if ATTRIBUTE is NIL, return NIL.
 If the ELEMENT has no way to get attributes (which usually means it's
 not an HTML element), throw `no-attributes-error'.
 
-MUST have a setf-method. Accept any type of data and convert it to
-string before setf-ing the value. If the value is NIL, remove the
-attribute."))
+MUST have a setf-method."))
+(defgeneric (setf attr) (value element &optional attribute)
+  (:documentation "Set an ATTRIBUTE value for the ELEMENT.
+
+Accept any type of data and convert it to string before setf-ing the
+value. If the value is NIL, remove the attribute."))
 (defgeneric attrs (element)
   (:documentation "Get a list of attribute names."))
 (defgeneric inner-text (element)
