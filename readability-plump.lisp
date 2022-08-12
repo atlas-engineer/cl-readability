@@ -291,13 +291,7 @@
     (signal 'too-many-elements-error :number-of-elements len))
   (unwrap-noscript-images document)
   ;; TODO: var jsonLd = this._disableJSONLD ? {} : this._getJSONLD(this._doc);
-  ;; XXX: this._removeScripts(this._doc);
-  (loop for node across (clss:select "script,noscript" document)
-        when (equalp "script" (plump:tag-name node))
-          do (plump:remove-attribute node "src")
-             ;; FIXME: Can <script> have >1 children? What for?
-          and do (plump:remove-child (elt (plump:children node) 0))
-        else do (plump:remove-child node))
+  (remove-scripts document)
   (prepare-document document)
   (let* ((doc document)
          (*document-url* url)

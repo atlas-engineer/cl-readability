@@ -601,8 +601,7 @@ Readability._isSingleImage()"
                                  (uiop:strcat (when (attr new-img attr) "data-old-") attr))
                            val)
                 finally (progn
-                          (replace-child prev (first (children noscript)))
-                          (remove-child noscript)))))))
+                          (replace-child prev (first (children noscript)))))))))
   (:documentation "Find all <noscript> that are located after <img> nodes, and which contain only one <img> element.
 
 Replace the first image with the image from inside the <noscript> tag,
@@ -610,6 +609,12 @@ and remove the <noscript> tag. This improves the quality of the images
 we use on some sites (e.g. Medium).
 
 Readability._unwrapNoscriptImages()."))
+
+(defgeneric remove-scripts (document)
+  (:method ((document t))
+    (mapcar #'remove-child (qsa document "script"))
+    (mapcar #'remove-child (qsa document "noscript")))
+  (:documentation "Removes script tags from the document."))
 
 ;; The toplevel API.
 
