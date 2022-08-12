@@ -404,13 +404,15 @@ Readability._hasAncestorTag()."))
 
 (defgeneric link-density (element)
   (:method ((element t))
-    (/ (reduce (lambda (link-length link)
-                 (+ link-length
-                    (let* ((href (attr link "href"))
-                           (hash-p (when href (eql #\# (elt href 0)))))
-                      (* (text-length link) (if hash-p 0.3 1)))))
-               (qsa element "a") :initial-value 0)
-       (text-length element)))
+    (if (zerop (text-length element))
+        0
+        (/ (reduce (lambda (link-length link)
+                     (+ link-length
+                        (let* ((href (attr link "href"))
+                               (hash-p (when href (eql #\# (elt href 0)))))
+                          (* (text-length link) (if hash-p 0.3 1)))))
+                   (qsa element "a") :initial-value 0)
+           (text-length element))))
   (:documentation "Get the density of links as a percentage of the content.
 This is the amount of text that is inside a link divided by the total
 text in the node.
@@ -440,9 +442,10 @@ Readability._getClassWeight()"))
       (dolist (tag tags)
         (dolist (node (reverse (qsa element tag)))
           (let* ((is-list (or (smember tag '("ul" "ol"))
-                              (> (/ (reduce #'+ (mapcar #'text-length (qsa node "ul" "ol")))
-                                    (length (inner-text node)))
-                                 0.9)))
+                              (unless (zerop (text-length node))
+                                (> (/ (reduce #'+ (mapcar #'text-length (qsa node "ul" "ol")))
+                                      (text-length node))
+                                   0.9))))
                  (img (length (qsa node "img")))
                  (p (length (qsa node "p")))
                  (li (- (length (qsa node "li")) 100))
