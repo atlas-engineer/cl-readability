@@ -453,7 +453,7 @@ Readability._getClassWeight()"))
                  (heading-density (if (zerop content-length)
                                       0
                                       (/ (reduce
-                                          #'+ (mapcar #'textlength (qsa node "h1,h2,h3,h4,h5,h6")))
+                                          #'+ (mapcar #'text-length (qsa node "h1,h2,h3,h4,h5,h6")))
                                          content-length)))
                  (embeds (qsa node "object, embed, iframe"))
                  (embed-count (count-if-not #'video-embed-p embeds))
