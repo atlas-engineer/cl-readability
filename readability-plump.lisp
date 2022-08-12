@@ -170,28 +170,6 @@
                (cons node (parents (plump:parent node) (1+ depth))))))
     (parents node 0)))
 
-(defmethod phrasing-content-p ((node plump:element))
-  (or (smember (plump:tag-name node) *phrasing-elements*)
-      (and (smember (plump:tag-name node) '("a" "del" "ins"))
-           (every #'phrasing-content-p (plump:children node)))))
-
-(defmethod phrasing-content-p ((node plump:text-node))
-  t)
-
-(defmethod phrasing-content-p ((node plump:comment))
-  (remove-child node)
-  nil)
-
-(defmethod whitespace-node-p ((node plump:text-node))
-  (zerop (length (string-trim serapeum:whitespace (plump:text node)))))
-
-(defmethod whitespace-node-p ((node plump:comment))
-  (remove-child node)
-  t)
-
-(defmethod whitespace-node-p ((node plump:element))
-  (string-equal "br" (plump:tag-name node)))
-
 ;; Readability._hasChildBlockElement()
 (defmethod has-block-children-p ((node plump:element))
   (some (lambda (child)
@@ -279,7 +257,7 @@
             do (reduce
                 (lambda (c1 c2)
                   (if (and (phrasing-content-p c2)
-                           (not (whitespace-node-p c2)))
+                           (not (whitespace-p c2)))
                       (progn
                         (remove-child c2)
                         (plump:append-child c1 c2)
