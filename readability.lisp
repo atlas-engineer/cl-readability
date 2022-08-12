@@ -499,6 +499,20 @@ density, number of images & embeds, etc.
 
 Readability._cleanConditionally()."))
 
+(defgeneric has-single-tag-inside (element tag)
+  (:method ((element t) tag)
+    (and (= (length (children element)) 1)
+         (string-equal tag (name (first (children element))))
+         (not (some (lambda (c)
+                      (and (text-node-p c)
+                           ;; Readability.REGEXPS.hasContent
+                           (test "\\S$" (inner-text c))))
+                    (child-nodes element)))))
+  (:documentation "Check if this node has only whitespace and a single element with given tag.
+
+Returns false if the DIV node contains non-empty text nodes or if it
+contains no element with given tag or more than 1 element."))
+
 (defgeneric prepare-article (element)
   (:method ((element t))
     (clean-styles element)
@@ -528,19 +542,17 @@ Readability._cleanConditionally()."))
     (dolist (br (qsa element "br"))
       (unless (matches (next-node (next-sibling br)) "p")
         (remove-child br)))
-    ;;     // Remove single-cell tables
-    ;; this._forEachNode(this._getAllNodesWithTag(articleContent, ["table"]), function(table) {
-    ;;   var tbody = this._hasSingleTagInsideElement(table, "TBODY") ? table.firstElementChild : table;
-    ;;   if (this._hasSingleTagInsideElement(tbody, "TR")) {
-    ;;     var row = tbody.firstElementChild;
-    ;;     if (this._hasSingleTagInsideElement(row, "TD")) {
-    ;;       var cell = row.firstElementChild;
-    ;;       cell = this._setNodeTag(cell, this._everyNode(cell.childNodes, this._isPhrasingContent) ? "P" : "DIV");
-    ;;       table.parentNode.replaceChild(cell, table);
-    ;;     }
-    ;;   }
-    ;; });
-    )
+    (dolist (table (qsa element "table"))
+      (serapeum:and-let* ((single-tbody (has-single-tag-inside table "tbody"))
+                          (tbody (qs table "tbody"))
+                          (single-tr (has-single-tag-inside tbody "tr"))
+                          (row (qs tbody "tr"))
+                          (single-td (has-single-tag-inside row "td"))
+                          (cell (qs row "td"))
+                          (new-cell (set-tag-name
+                                     cell (if (every #'phrasing-content-p (child-nodes cell))
+                                              "p" "div"))))
+        (replace-child table new-cell))))
   (:documentation "Prepare the article ELEMENT for display.
 Clean out any inline styles, iframes, forms, strip extraneous <p> tags, etc.
 
