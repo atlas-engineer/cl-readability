@@ -111,10 +111,11 @@
   (plump:make-text-node (plump:make-root) text))
 
 (defmethod node-visible-p ((node plump:element))
-  ;; TODO: (!node.style || node.style.display != "none")
-  (and (not (plump:has-attribute node "hidden"))
-       ;; TODO: (node.className && node.className.indexOf &&
-       ;; node.className.indexOf("fallback-image") !== -1
+  (and (or (not (plump:has-attribute node "style"))
+           (not (search "display: none" (plump:get-attribute node "style"))))
+       (not (plump:has-attribute node "hidden"))
+       (or (not (plump:has-attribute node "class"))
+           (search "fallback-image" (plump:get-attribute node "class")))
        (or (not (plump:has-attribute node "aria-hidden"))
            (not (string-equal (plump:get-attribute node "aria-hidden") "true")))))
 
