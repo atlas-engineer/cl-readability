@@ -290,6 +290,7 @@
          (doc (grab-article doc)))
     ;; XXX: this._postProcessContent(articleContent);
     (post-process-content doc)
+    (prepare-article doc)
     ;; TODO: Find excerpt.
     (values doc
             (plump:serialize doc nil)
