@@ -124,21 +124,6 @@
   (let ((*visibility-checker* #'node-visible-p))
     (call-next-method)))
 
-;;; XXX: Readability._getNextNode()
-(defmethod get-next-node ((node plump:node) &optional ignore-self-and-kids)
-  (declare (ignore ignore-self-and-kids))
-  (plump:next-element node))
-
-;;; XXX: Readability._getNextNode()
-(defmethod get-next-node ((element plump:nesting-node) &optional ignore-self-and-kids)
-  (if ignore-self-and-kids
-      (loop for node = (plump:parent element) then (plump:parent node)
-            until (and node (not (plump:next-element node)))
-            finally (return (and node (plump:next-element node))))
-      (loop for child across (plump:children element)
-            when (plump:element-p child)
-              do (return child))))
-
 ;;; XXX: Readability._checkByline()
 (defmethod get-byline ((element plump:element) match-string)
   (let ((rel (plump:get-attribute element "rel"))
