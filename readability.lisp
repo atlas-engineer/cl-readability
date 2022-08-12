@@ -14,7 +14,7 @@
    (find-method #'attr nil (list (class-of maybe-element)) nil)
    (find-method #'attrs nil (list (class-of maybe-element)) nil)
    (find-method #'parent nil (list (class-of maybe-element)) nil)
-   (find-method #'children nil (list (class-of maybe-element)) nil)))
+   (find-method #'child-nodes nil (list (class-of maybe-element)) nil)))
 
 (defgeneric text-node-p (node)
   (:documentation "Whether the NODE is a text node."))
@@ -66,11 +66,11 @@ This also strips out any excess whitespace to be found."))
   (:documentation "Return the inner HTML of ELEMENT as a plain string."))
 (defgeneric parent (element)
   (:documentation "Get a parent of the ELEMENT or NIL."))
-(defgeneric children (element)
+(defgeneric child-nodes (element)
   (:documentation "Get a list of ELEMENT children."))
-(defgeneric children-elements (element)
+(defgeneric children (element)
   (:method ((element t))
-    (remove-if-not #'element-p (children element)))
+    (remove-if-not #'element-p (child-nodes element)))
   (:documentation "Get a list of ELEMENT children elements."))
 (defgeneric next-sibling (node)
   (:documentation "Get next sibling node for a NODE or NIL if there's none.
@@ -114,8 +114,8 @@ Owes a terrible name to Readability._setTagName() method."))
 (defgeneric without-content-p (element)
   (:method ((element t))
     (and (zerop (length (string-trim serapeum:whitespace (inner-text element))))
-         (or (zerop (length (children-elements element)))
-             (= (length (children-elements element))
+         (or (zerop (length (children element)))
+             (= (length (children element))
                 (+ (length (qsa element "br"))
                    (length (qsa element "hr")))))))
   (:documentation "Whether the element is empty.
@@ -166,7 +166,7 @@ Readability._replaceNodeTags()."))
            (class (when preserved-classes
                     (format nil "~{~a~^ ~}" preserved-classes))))
       (setf (attr element "class") class)
-      (mapc #'clean-classes (children-elements element))))
+      (mapc #'clean-classes (children element))))
   (:documentation "Removes the class attribute from every element in the given ELEMENT subtree.
 
 Ignores classes those that match `*preserved-classes*'.
@@ -188,7 +188,7 @@ Readability._cleanClasses()."))
           ;; after scripts have been removed from the page.
           ((and (attr node "href")
                 (uiop:string-prefix-p "javascript:" (attr node "href")))
-           (if (zerop (length (children-elements node)))
+           (if (zerop (length (child-nodes node)))
                ;; If the link only contains simple text content, it can be converted to a text node.
                (replace-child node (make-text-node (inner-text node)))
                ;; If the link has multiple children, they should all be preserved.
@@ -224,15 +224,15 @@ Readability._fixRelativeUris()"))
       (cond
         ((without-content-p element)
          (remove-child element))
-        ((and (children-elements element)
-              (serapeum:single (children-elements element))
-              (matches "div, section" (first (children-elements element))))
+        ((and (children element)
+              (serapeum:single (children element))
+              (matches "div, section" (first (children element))))
          (replace-child
           element
-          (serapeum:lret ((child (first (children-elements element))))
+          (serapeum:lret ((child (first (children element))))
             (dolist (attr (attrs element))
               (setf (attr child attr) (attr element attr)))
-            (simplify-nested-elements (first (children element))))))))
+            (simplify-nested-elements (first (child-nodes element))))))))
     (mapc #'simplify-nested-elements (children element)))
   (:documentation "Readability._simplifyNestedElements()."))
 
@@ -286,14 +286,14 @@ Readability._fixRelativeUris()"))
 
 Readability._getArticleTitle()."))
 
-(defgeneric phrasing-context-p (node)
+(defgeneric phrasing-content-p (node)
   (:method ((node t))
     (or
      (text-node-p node)
      (smember (name node) *phrasing-elements*)
      (and (smember (name node) '("a" "del" "ins"))
           ;; FIXME: node.childNodes
-          (every #'phrasing-context-p (children node)))))
+          (every #'phrasing-content-p (children node)))))
   (:documentation "Determine if a node qualifies as phrasing content.
 https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phrasing_content
 
@@ -320,7 +320,7 @@ Readability._isPhrasingContent()."))
             (let ((p (set-tag-name br "p")))
               (loop for next = (next-sibling p) then next-sibling
                     for next-sibling = (next-sibling next)
-                    while (and next (phrasing-context-p next))
+                    while (and next (phrasing-content-p next))
                     do (remove-child next)
                     do (append-child p next)
                     when (and (matches next "br")
@@ -360,7 +360,7 @@ This includes things like stripping javascript, CSS, and handling terrible marku
       (when (smember (name element) *deprecated-size-attribute-names*)
         (setf (attr element "width") nil
               (attr element "height") nil))
-      (mapc #'clean-styles (children-elements element))))
+      (mapc #'clean-styles (children element))))
   (:documentation "
 
 Readability._cleanStyles()."))
