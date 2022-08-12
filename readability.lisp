@@ -500,6 +500,15 @@ density, number of images & embeds, etc.
 
 Readability._cleanConditionally()."))
 
+(defgeneric clean-headers (element)
+  (:method ((element t))
+    (dolist (heading (qsa element "h1, h2"))
+      (when (minusp (class-weight heading))
+        (remove-child heading))))
+  (:documentation "Clean out spurious headers from an Element.
+
+Readability._cleanHeaders()"))
+
 (defgeneric single-tag-inside-p (element tag)
   (:method ((element t) tag)
     (and (= (length (children element)) 1)
@@ -534,7 +543,7 @@ Readability._hasSingleTagInside()."))
     ;;   });
     ;; });
     (clean element "iframe" "input" "textarea" "select" "button")
-    ;; this._cleanHeaders(articleContent);
+    (clean-headers element)
     (clean-conditionally element "table" "ul" "div")
     (dolist (h1 (qsa element "h1"))
       (set-tag-name h1 "h2"))
