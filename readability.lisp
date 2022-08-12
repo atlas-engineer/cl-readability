@@ -500,7 +500,7 @@ density, number of images & embeds, etc.
 
 Readability._cleanConditionally()."))
 
-(defgeneric has-single-tag-inside (element tag)
+(defgeneric single-tag-inside-p (element tag)
   (:method ((element t) tag)
     (and (= (length (children element)) 1)
          (string-equal tag (name (first (children element))))
@@ -512,7 +512,9 @@ Readability._cleanConditionally()."))
   (:documentation "Check if this node has only whitespace and a single element with given tag.
 
 Returns false if the DIV node contains non-empty text nodes or if it
-contains no element with given tag or more than 1 element."))
+contains no element with given tag or more than 1 element.
+
+Readability._hasSingleTagInside()."))
 
 (defgeneric prepare-article (element)
   (:method ((element t))
@@ -544,11 +546,11 @@ contains no element with given tag or more than 1 element."))
       (unless (matches (next-node (next-sibling br)) "p")
         (remove-child br)))
     (dolist (table (qsa element "table"))
-      (serapeum:and-let* ((single-tbody (has-single-tag-inside table "tbody"))
+      (serapeum:and-let* ((single-tbody (single-tag-inside-p table "tbody"))
                           (tbody (qs table "tbody"))
-                          (single-tr (has-single-tag-inside tbody "tr"))
+                          (single-tr (single-tag-inside-p tbody "tr"))
                           (row (qs tbody "tr"))
-                          (single-td (has-single-tag-inside row "td"))
+                          (single-td (single-tag-inside-p row "td"))
                           (cell (qs row "td"))
                           (new-cell (set-tag-name
                                      cell (if (every #'phrasing-content-p (child-nodes cell))

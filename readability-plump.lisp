@@ -192,14 +192,6 @@
 (defmethod whitespace-node-p ((node plump:element))
   (string-equal "br" (plump:tag-name node)))
 
-(defmethod single-tag-inside-p ((node plump:element) (tag-name string))
-  (serapeum:and-let* ((children (serapeum:filter #'plump:element-p (plump:children node)))
-                      (one-child (= 1 (length children)))
-                      (tag (plump:tag-name (elt children 0)))
-                      (matching-tag (string-equal tag tag-name)))
-    (every #'whitespace-node-p
-           (remove-if #'plump:element-p (plump:children node)))))
-
 ;; Readability._hasChildBlockElement()
 (defmethod has-block-children-p ((node plump:element))
   (some (lambda (child)
