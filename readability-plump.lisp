@@ -208,7 +208,11 @@
           when (and *visibility-checker*
                     (not (funcall *visibility-checker* node)))
             do (remove-child node)
+          when (and (plump:get-attribute node "aria-modal")
+                    (equal (plump:get-attribute node "role") "dialog"))
+            do (remove-child node)
                ;; TODO: this._checkByline(node, matchString)
+               ;; TODO: this._headerDuplicatesTitle
           when (and (ppcre:scan *unlikely-candidate-regex* match-string)
                     (not (ppcre:scan *maybe-candidate-regex* match-string))
                     (not (has-ancestor-tag node "table"))
@@ -229,23 +233,30 @@
                     (string-equal "div" (plump:tag-name node)))
             do (reduce
                 (lambda (c1 c2)
-                  (if (and (phrasing-content-p c2)
-                           (not (whitespace-p c2)))
-                      (progn
-                        (remove-child c2)
-                        (plump:append-child c1 c2)
-                        c1)
-                      (if (zerop (length (plump:children c1)))
-                          c1
-                          (plump:make-element node "p"))))
+                  (let ((phrasing (and (phrasing-content-p c2)
+                                       (not (whitespace-p c2)))))
+                    (cond
+                      (phrasing
+                       (remove-child c2)
+                       (plump:append-child c1 c2)
+                       c1)
+                      ((and phrasing
+                            (zerop (length (plump:children c1))))
+                       c1)
+                      (t (plump:make-element node "p")))))
                 (plump:children node)
                 :initial-value (plump:make-element node "p"))
-          when (and (parent node) (single-tag-inside-p node "p"))
-            do (plump:replace-child node (elt (clss:select "p" node) 0))
-               ;; TODO: L1005-1319
+          do (cond
+               ((and (parent node)
+                    (single-tag-inside-p node "p")
+                    (< (link-density node) 0.25))
+                (plump:replace-child node (elt (clss:select "p" node) 0)))
+               ((has-block-children-p node)
+                (set-tag-name node "p")))
+             ;; TODO: L1005-1319
           when (scoreable-p node)
             maximize (calculate-score node) into max-score
-          ;; TODO: 1057-1319
+          ;; TODO: 1060-1243
           )
     body))
 
