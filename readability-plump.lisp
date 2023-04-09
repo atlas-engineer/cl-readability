@@ -202,7 +202,7 @@
 (defmethod grab-article ((document plump:nesting-node))
   (alexandria:when-let* ((body (clss:select "body" document))
                          (body (elt body 0)))
-    (loop for node across (clss:select "*" body)
+    (loop for node across (clss:ordered-select "*" body)
           for match-string = (uiop:strcat (plump:get-attribute node "class") " "
                                           (plump:get-attribute node "id"))
           when (and *visibility-checker*
