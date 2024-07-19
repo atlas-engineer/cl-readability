@@ -251,7 +251,7 @@
                     (single-tag-inside-p node "p")
                     (< (link-density node) 0.25))
                 (plump:replace-child node (elt (clss:select "p" node) 0)))
-               ((has-block-children-p node)
+               ((and (has-block-children-p node) (parent node))
                 (set-tag-name node "p")))
              ;; TODO: L1005-1319
           when (scoreable-p node)
